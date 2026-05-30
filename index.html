@@ -578,11 +578,10 @@ function saveDB() {
     // Save only mutable data (not static template config)
     var data = {
       inmuebles: DB.inmuebles.map(function(p) {
-        // Don't save full photo base64 in localStorage (too large) — save count only as placeholder
         var p2 = Object.assign({}, p);
-        // Photos ARE saved — localStorage supports up to ~5MB, warn if too large
         return p2;
       }),
+      locadores: DB.locadores || [],
       nextId: DB.nextId,
       inquilinos: DB.inquilinos,
       contratos: DB.contratos,
@@ -597,6 +596,7 @@ function saveDB() {
       try {
         var data2 = {
           inmuebles: DB.inmuebles.map(function(p){ return Object.assign({}, p, {fotos:[]}); }),
+          locadores: DB.locadores || [],
           nextId: DB.nextId,
           inquilinos: DB.inquilinos,
           contratos: DB.contratos,
@@ -618,6 +618,7 @@ function loadDB() {
     var data = JSON.parse(raw);
     if(data.inmuebles) DB.inmuebles = data.inmuebles;
     if(data.nextId) DB.nextId = data.nextId;
+    if(data.locadores && data.locadores.length) DB.locadores = data.locadores;
     if(data.inquilinos) DB.inquilinos = data.inquilinos;
     if(data.contratos) DB.contratos = data.contratos;
     if(data.cobros) DB.cobros = data.cobros;
@@ -700,7 +701,7 @@ function nav(page) {
 
 function renderPage() {
   var main = document.getElementById('main');
-  var pages = {dashboard:pgDashboard,inmuebles:pgInmuebles,inquilinos:pgInquilinos,contratos:pgContratos,mantenimiento:pgMantenimiento,financiero:pgFinanciero,facturacion:pgFacturacion,informes:pgInformes};
+  var pages = {dashboard:pgDashboard,inmuebles:pgInmuebles,inquilinos:pgInquilinos,contratos:pgContratos,locadores:pgLocadores,mantenimiento:pgMantenimiento,financiero:pgFinanciero,facturacion:pgFacturacion,informes:pgInformes};
   if(pages[PAGE]) pages[PAGE](main);
 }
 
@@ -2194,7 +2195,7 @@ function renderWizard() {
 
   // ── STEP 1: Inmueble + Locador ───────────────────────────────────────
   if(CONTRACT_STEP===1) {
-    var avail = DB.inmuebles.filter(function(p){return p.estado!=='mantenimiento';});
+    var avail = DB.inmuebles; // Show all, badge-mark alquilados
     var locOpts = (DB.locadores||[]).map(function(l){
       return '<option value="'+l.id+'"'+(CONTRACT_DATA.locId===l.id?' selected':'')+'>'+h(l.nombre)+(l.cuit?' — CUIT '+l.cuit:'')+'</option>';
     }).join('');
@@ -2212,9 +2213,11 @@ function renderWizard() {
         '<div style="text-align:right">' +
         (p.precio?'<div style="font-family:var(--serif);font-size:17px;color:var(--accent-dark)">'+fmtPeso(p.precio)+'</div><div style="font-size:11px;color:var(--text3)">por mes</div>':'') +
         '</div>' +
-        '<div id="chk-'+p.id+'" style="width:22px;height:22px;border-radius:50%;border:2px solid '+(selected?'var(--gold)':'var(--border2)')+';background:'+(selected?'var(--gold)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
+        statusBadge(p.estado) +
+        '<div id="chk-'+p.id+'" style="width:22px;height:22px;border-radius:50%;border:2px solid '+(selected?'var(--gold)':'var(--border2)')+';background:'+(selected?'var(--gold)':'transparent')+';display:flex;align-items:center;justify-content:center">' +
         (selected?'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>':'') +
-        '</div>' +
+        '</div></div>' +
         '</div>';
     }).join('');
 
@@ -2392,9 +2395,9 @@ function fillLocadorFields() {
   var sel = document.getElementById('loc-sel');
   if(!sel) return;
   var locId = parseInt(sel.value);
-  CONTRACT_DATA.locId = locId;
+  CONTRACT_DATA.locId = isNaN(locId) ? null : locId;
   var prev = document.getElementById('locador-preview');
-  if(prev) prev.innerHTML = renderLocadorPreview(locId);
+  if(prev) prev.innerHTML = renderLocadorPreview(CONTRACT_DATA.locId);
 }
 
 function prefillLocatario(inqId) {

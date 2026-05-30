@@ -3164,9 +3164,10 @@ function renderIncTable(list) {
           (inc.costo?fmtPeso(inc.costo):'—')+'</td>' +
         '<td style="font-size:12px;color:var(--text3)">'+h(inc.fecha)+'</td>' +
         '<td>'+statusBadge(inc.estado)+'</td>' +
-        '<td>' +
-          '<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px" onclick="openEditInc('+inc.id+')">✏️</button>' +
-          (inc.estado!=='resuelto'?'<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;color:var(--green)" onclick="resolverInc('+inc.id+')">✓</button>':'') +
+        '<td style="white-space:nowrap">' +
+          '<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px" onclick="openEditInc('+inc.id+')" title="Editar">✏️</button>' +
+          (prov && prov.wa ? '<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;color:#25D366" onclick="enviarWA('+inc.id+')" title="Enviar WhatsApp al proveedor">💬</button>' : '') +
+          (inc.estado!=='resuelto'?'<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;color:var(--green)" onclick="resolverInc('+inc.id+')" title="Marcar resuelta">✓</button>':'') +
         '</td>' +
         '</tr>';
     }).join('') +
@@ -3574,6 +3575,119 @@ function openEditProv(id) {
   }}]);
   openModal('Editar proveedor — '+p.nombre, bodyEl, false, footer);
 }
+
+function enviarWA(incId) {
+  var inc  = DB.incidencias.find(function(x){return x.id===incId;}); if(!inc) return;
+  var prov = getProv(inc.provId);
+  if(!prov || !prov.wa) { toast('Este proveedor no tiene WhatsApp registrado','error'); return; }
+
+  var inm  = getInm(inc.inmId);
+  // Find inquilino linked to this inmueble
+  var ct   = DB.contratos.find(function(c){ return c.inmId===inc.inmId && c.estado==='vigente'; });
+  var inq  = ct ? getInq(ct.inqId) : null;
+
+  // Build modal to preview and edit the message before sending
+  var prioLabel = {alta:'🔴 URGENTE',media:'🟡 Media prioridad',baja:'⚪ Baja prioridad'}[inc.prio] || '';
+  var defaultMsg = [
+    '🔧 *SOLICITUD DE REPARACIÓN — PropManager*',
+    '',
+    '*Proveedor:* ' + (prov.nombre||''),
+    '*Rubro:* ' + (prov.rubro||''),
+    '',
+    '📋 *DETALLE DE LA INCIDENCIA*',
+    '*Título:* ' + (inc.titulo||''),
+    '*Prioridad:* ' + prioLabel,
+    (inc.desc ? '*Descripción:* ' + inc.desc : ''),
+    '',
+    '🏠 *DATOS DEL INMUEBLE*',
+    '*Dirección:* ' + (inm ? inm.dir : '—'),
+    '*Tipo:* ' + (inm ? inm.tipo : '—'),
+    (inm && inm.desc ? '*Estado:* ' + inm.desc.slice(0,100) : ''),
+    '',
+    (inq ? [
+      '👤 *CONTACTO DEL INQUILINO (para coordinar acceso)*',
+      '*Nombre:* ' + inq.nombre,
+      '*Teléfono:* ' + (inq.tel||'—'),
+      '*Email:* ' + (inq.email||'—'),
+    ].join('\n') : ''),
+    '',
+    '📅 *Fecha de reporte:* ' + (inc.fecha||new Date().toLocaleDateString('es-AR')),
+    '',
+    '⚠️ Por favor confirmar recepción y disponibilidad para coordinar visita.',
+    '',
+    '— Carolina Gerosa · PropManager · 02945 462624'
+  ].filter(function(l){ return l !== undefined; }).join('\n');
+
+  // Count photos from related incidencia (not stored, but check facturas with image type)
+  var imagenes = (inc.facturas||[]).filter(function(f){ return f.type && f.type.startsWith('image/'); });
+
+  var bodyEl = document.createElement('div');
+  bodyEl.innerHTML =
+    // Provider info bar
+    '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px">' +
+    '<div>' +
+    '<div style="font-size:12px;color:var(--text3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em">Enviando a</div>' +
+    '<div style="font-weight:600;font-size:15px">'+h(prov.nombre)+'</div>' +
+    '<div style="font-size:12px;color:var(--text3)">'+h(prov.rubro||'')+' · WA: '+h(prov.wa)+'</div>' +
+    '</div>' +
+    '<div style="background:#25D366;color:white;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">💬</div>' +
+    '</div>' +
+
+    // Message textarea
+    '<div class="form-field" style="margin-bottom:14px">' +
+    '<label>Mensaje (editá antes de enviar)</label>' +
+    '<textarea id="wa-msg" style="min-height:280px;font-family:monospace;font-size:12px;line-height:1.6">'+h(defaultMsg)+'</textarea>' +
+    '</div>' +
+
+    // Photos notice
+    (imagenes.length ?
+      '<div style="background:var(--blue-light);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--blue)">' +
+      '📸 Hay '+imagenes.length+' imagen'+(imagenes.length>1?'es':'')+' adjunta'+(imagenes.length>1?'s':'')+' en esta incidencia. ' +
+      'WhatsApp Web no permite enviar imágenes automáticamente, pero podés adjuntarlas manualmente en el chat una vez que se abra.' +
+      '</div>' : '') +
+
+    // Tip
+    '<div style="background:var(--gold-light);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--gold-dark)">' +
+    '💡 Al hacer clic en <strong>Abrir WhatsApp</strong> se abre WhatsApp Web con este mensaje prellenado.' +
+    (imagenes.length ? ' Después podés adjuntar las fotos de la incidencia.' : '') +
+    '</div>';
+
+  var footer = modalFooter([
+    {label:'Copiar mensaje', cls:'btn-secondary', action:function(){
+      var msg = document.getElementById('wa-msg').value;
+      navigator.clipboard.writeText(msg).then(function(){
+        toast('Mensaje copiado al portapapeles ✓','success');
+      }).catch(function(){
+        toast('No se pudo copiar automáticamente','error');
+      });
+    }},
+    {label:'💬 Abrir WhatsApp', cls:'btn-green', action:function(){
+      var msg = document.getElementById('wa-msg').value;
+      // Clean the WA number: remove spaces, dashes, leading 0, add country code Argentina
+      var waNum = prov.wa.replace(/[\s\-\(\)]/g,'');
+      if(waNum.startsWith('0')) waNum = '54' + waNum.slice(1);
+      if(!waNum.startsWith('54')) waNum = '54' + waNum;
+      // Remove any double 54
+      if(waNum.startsWith('5454')) waNum = waNum.slice(2);
+      var url = 'https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg);
+      window.open(url, '_blank');
+      // Log the contact
+      if(!inc.contactos) inc.contactos = [];
+      inc.contactos.push({
+        fecha: new Date().toLocaleDateString('es-AR'),
+        hora:  new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),
+        via:   'WhatsApp',
+        prov:  prov.nombre
+      });
+      saveDB();
+      closeModal();
+      toast('WhatsApp abierto ✓','success');
+    }}
+  ]);
+
+  openModal('Enviar solicitud por WhatsApp — '+prov.nombre, bodyEl, false, footer);
+}
+
 
 function deleteProv(id) {
   var p = getProv(id); if(!p) return;

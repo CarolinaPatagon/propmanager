@@ -1754,21 +1754,53 @@ function showPeriodoModal(inq, fileDataList, container) {
   var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   var defaultPeriodo = meses[hoy.getMonth()] + ' ' + hoy.getFullYear();
 
+  // Build list of cobros pendientes para este inquilino
+  var cobrosPendientes = [];
+  DB.contratos.filter(function(ct){ return ct.inqId === inq.id; }).forEach(function(ct) {
+    DB.cobros.filter(function(c){ return c.ctId === ct.id && c.estado !== 'cobrado'; }).forEach(function(c) {
+      cobrosPendientes.push(c);
+    });
+  });
+
+  // Build period selector: pending cobros first, then free text
+  var periodoOpts = '<option value="">── Escribir período manualmente ──</option>';
+  if(cobrosPendientes.length) {
+    periodoOpts = '<option value="">── Escribir período manualmente ──</option>' +
+      cobrosPendientes.map(function(c) {
+        return '<option value="cobro:' + c.id + '">' + h(c.mes) + ' — ' + fmtPeso(c.monto) + ' (' + h(c.estado) + ')</option>';
+      }).join('');
+  }
+
   var bodyEl = document.createElement('div');
   bodyEl.innerHTML =
-    '<p style="font-size:13px;color:var(--text2);margin-bottom:16px">' +
+    '<p style="font-size:13px;color:var(--text2);margin-bottom:14px">' +
     'Vas a guardar <strong>' + fileDataList.length + ' archivo' + (fileDataList.length>1?'s':'') + '</strong>:</p>' +
-    '<div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:18px">' +
+    '<div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px">' +
     fileDataList.map(function(f){
-      return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px">' +
+      return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px">' +
         '<span>' + (f.type==='application/pdf'?'📄':'🖼️') + '</span>' +
         '<span>' + h(f.name) + '</span>' +
         '<span style="color:var(--text3);font-size:11px">(' + Math.round(f.size/1024) + ' KB)</span>' +
         '</div>';
     }).join('') + '</div>' +
     '<div class="form-grid">' +
-    '<div class="form-field full"><label>Período / Concepto *</label>' +
+
+    // Cobros pendientes selector
+    (cobrosPendientes.length ?
+      '<div class="form-field full">' +
+      '<label>Cobro pendiente a registrar</label>' +
+      '<select id="cp-cobro-sel" onchange="onCpCobroChange()">' + periodoOpts + '</select>' +
+      '<div style="font-size:11px;color:var(--green);margin-top:4px">✓ Al seleccionar un cobro se marcará como cobrado automáticamente</div>' +
+      '</div>' : '') +
+
+    '<div class="form-field full"><label>Período / Concepto' + (cobrosPendientes.length ? ' (o escribí uno libre)' : ' *') + '</label>' +
     '<input id="cp-periodo" type="text" value="' + defaultPeriodo + '" placeholder="ej: Mayo 2025, Depósito, Expensas...">' +
+    '</div>' +
+    '<div class="form-field"><label>Monto pagado ($)</label>' +
+    '<input id="cp-monto" type="number" placeholder="0" style="border:1px solid var(--border2)">' +
+    '</div>' +
+    '<div class="form-field"><label>Medio de pago</label>' +
+    '<select id="cp-medio"><option>Transferencia bancaria</option><option>Efectivo</option><option>Cheque</option><option>Otro</option></select>' +
     '</div>' +
     '<div class="form-field full"><label>Nota interna (opcional)</label>' +
     '<input id="cp-nota" type="text" placeholder="ej: Pago parcial, transferencia del día 5...">' +
@@ -1776,24 +1808,70 @@ function showPeriodoModal(inq, fileDataList, container) {
     '</div>';
 
   var footer = modalFooter([{
-    label: 'Guardar comprobante' + (fileDataList.length>1?'s':''),
+    label: 'Guardar y registrar pago',
     cls: 'btn-green',
     action: function() {
-      var periodo = document.getElementById('cp-periodo').value.trim() || defaultPeriodo;
-      var nota    = document.getElementById('cp-nota').value.trim();
+      var periodo  = document.getElementById('cp-periodo').value.trim() || defaultPeriodo;
+      var nota     = document.getElementById('cp-nota').value.trim();
+      var montoEl  = document.getElementById('cp-monto');
+      var monto    = montoEl ? (parseInt(montoEl.value)||0) : 0;
+      var medio    = document.getElementById('cp-medio') ? document.getElementById('cp-medio').value : 'Transferencia bancaria';
+      var cobroSel = document.getElementById('cp-cobro-sel');
+      var cobroId  = cobroSel ? cobroSel.value : '';
+
+      // Save files as comprobantes
       fileDataList.forEach(function(f) {
         f.periodo = periodo;
-        f.nota    = nota;
+        f.nota    = nota + (medio ? ' · ' + medio : '') + (monto ? ' · $' + monto.toLocaleString('es-AR') : '');
         inq.comprobantes.push(f);
       });
+
+      // If a pending cobro was selected: mark it as cobrado
+      if(cobroId && cobroId.startsWith('cobro:')) {
+        var cId = parseInt(cobroId.replace('cobro:',''));
+        var cobro = DB.cobros.find(function(c){ return c.id === cId; });
+        if(cobro) {
+          cobro.estado     = 'cobrado';
+          cobro.fechaPago  = new Date().toISOString().split('T')[0];
+          cobro.medioPago  = medio;
+          cobro.referencia = nota;
+          if(monto) cobro.monto = monto;
+          toast('Cobro de ' + cobro.mes + ' marcado como cobrado ✓', 'success');
+        }
+      }
+
       saveDB();
       renderCompList(container, inq);
       closeModal();
+
+      // Refresh current page if on financiero/dashboard/informes
+      if(PAGE === 'financiero' || PAGE === 'dashboard' || PAGE === 'informes') {
+        setTimeout(function(){ nav(PAGE); }, 300);
+      }
+
       toast(fileDataList.length + ' comprobante' + (fileDataList.length>1?'s':'') + ' guardado' + (fileDataList.length>1?'s':''), 'success');
     }
   }]);
 
   openModal('Guardar comprobante' + (fileDataList.length>1?'s':''), bodyEl, false, footer);
+}
+
+// When a pending cobro is selected, prefill the periodo input and monto
+function onCpCobroChange() {
+  var sel = document.getElementById('cp-cobro-sel');
+  var periodoEl = document.getElementById('cp-periodo');
+  var montoEl   = document.getElementById('cp-monto');
+  if(!sel || !periodoEl) return;
+
+  var val = sel.value;
+  if(val && val.startsWith('cobro:')) {
+    var cId = parseInt(val.replace('cobro:',''));
+    var cobro = DB.cobros.find(function(c){ return c.id === cId; });
+    if(cobro) {
+      periodoEl.value = cobro.mes;
+      if(montoEl && cobro.monto) montoEl.value = cobro.monto;
+    }
+  }
 }
 
 

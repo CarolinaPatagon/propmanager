@@ -55,7 +55,6 @@ docx/dist/index.cjs:
 */
 
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
 
@@ -459,6 +458,7 @@ textarea { resize:vertical; min-height:80px; }
 /* ── DIVIDER ── */
 hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="app">
@@ -542,9 +542,7 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
 var SUPA_URL = 'https://jtiyirhogrdoszhyqqqq.supabase.co';
 var SUPA_KEY = 'sb_publishable_04PNnAVSFFluqzaxrK-2og_58cNF06-';
 
-var supa = (window.supabase && SUPA_URL !== 'REEMPLAZAR_CON_TU_URL')
-  ? window.supabase.createClient(SUPA_URL, SUPA_KEY)
-  : null;
+var supa = null; // initialized lazily in loadDB()
 
 var DB = { inmuebles:[], inquilinos:[], contratos:[], cobros:[], gastos:[], incidencias:[], nextId:1 };
 
@@ -562,6 +560,14 @@ function mapGasto(r){ return {id:r.id,concepto:r.concepto,monto:r.monto||0,cat:r
 function mapInc(r)  { return {id:r.id,inmId:r.inm_id,titulo:r.titulo,prio:r.prio||'media',estado:r.estado||'pendiente',fecha:r.fecha||'',inqNombre:r.inq_nombre||'—',desc:r.descripcion||''}; }
 
 async function loadDB() {
+  // Initialize Supabase client lazily (ensures CDN is loaded)
+  if(!supa && window.supabase && SUPA_URL !== 'REEMPLAZAR_CON_TU_URL') {
+    try {
+      supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    } catch(e) {
+      console.error('Supabase init error:', e);
+    }
+  }
   if(!supa) {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);

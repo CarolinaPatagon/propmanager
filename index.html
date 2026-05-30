@@ -458,7 +458,6 @@ textarea { resize:vertical; min-height:80px; }
 /* ── DIVIDER ── */
 hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
 <div class="app">
@@ -511,6 +510,10 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
         <div style="font-family:var(--serif);font-size:15px;color:var(--gold-mid);letter-spacing:-.2px">Carolina Gerosa</div>
         
       </div>
+      <button class="btn btn-ghost" onclick="openReportarError()" style="width:100%;font-size:11px;color:#E8A0A0;padding:5px 8px;justify-content:center;border-color:rgba(255,100,100,.15);margin-bottom:4px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Reportar error
+      </button>
       <button class="btn btn-ghost" onclick="clearDB()" style="width:100%;font-size:11px;color:var(--sidebar-text2);padding:5px 8px;justify-content:center;border-color:rgba(255,255,255,.08)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
         Resetear datos
@@ -536,156 +539,394 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
 // ============================================================
 // DATA
 // ============================================================
-// ─────────────────────────────────────────────────────────────────────────
-// SUPABASE CONFIG — reemplazá con tus credenciales
-// ─────────────────────────────────────────────────────────────────────────
-var SUPA_URL = 'https://jtiyirhogrdoszhyqqqq.supabase.co';
-var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgwMTQ2MDg4LCJleHAiOjIwOTU1MDYwODh9.2yqJ_aj76Z_xKbIzX-NK-sllIrtc8LMOFyvnli8AkZU';
+var DB = {
+  inmuebles: [
+    {id:1,  dir:'25 de Mayo Nº 498',            tipo:'Oficina',         barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'disponible',hab:0,m2:0,  desc:'Edificio Lab. Sede central.',                                                                                                            fotos:[],feats:['gas_natural','agua_corriente','apt_profesional']},
+    {id:2,  dir:'Av. Alvear 948, Local 1',       tipo:'Local comercial', barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'disponible',hab:0,m2:0,  desc:'Baño con inodoro, mesada con pileta y griferias en buen estado, calefacción central con radiadores nuevos, caldera sobre mesada de cocina.',                   fotos:[],feats:['bano_completo','calef_central','radiadores','caldera','gas_natural','agua_corriente']},
+    {id:3,  dir:'Av. Alvear 948, Local 2',       tipo:'Local comercial', barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'alquilado', hab:0,m2:0,  desc:'Amplio local con cocina y baños. Entregado en construcción nueva. (Ceci)',                                                                                       fotos:[],feats:['bano_completo','cocina_sep','a_estrenar']},
+    {id:4,  dir:'Av. Alvear 948, Dpto 1-A',      tipo:'Departamento',    barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'alquilado', hab:2,m2:0,  desc:'Cocina, baño equipado en buenas condiciones, dos habitaciones grandes con armarios empotrados. (Lole)',                                                          fotos:[],feats:['bano_completo','cocina_sep','placares','gas_natural','agua_corriente']},
+    {id:5,  dir:'Av. Alvear 948, Dpto 1-B',      tipo:'Departamento',    barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'alquilado', hab:1,m2:0,  desc:'Cocina, baño equipado, 1 habitación. Equipado temporal: cocina americana, heladera, microondas, TV. (Coco)',                                                    fotos:[],feats:['bano_completo','cocina_int','heladera','microondas','amoblado','gas_natural','agua_corriente']},
+    {id:6,  dir:'Av. Alvear 948, Local 3',       tipo:'Local comercial', barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'alquilado', hab:0,m2:0,  desc:'Local amplio. (Kinesio)',                                                                                                                                         fotos:[],feats:['bano_completo','gas_natural','agua_corriente','apt_profesional']},
+    {id:7,  dir:'Av. Alvear 948, Local 4',       tipo:'Local comercial', barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'alquilado', hab:0,m2:0,  desc:'3 habitaciones, una cocina, un baño. Todo nuevo. (Lavadero)',                                                                                                     fotos:[],feats:['bano_completo','cocina_sep','a_estrenar','gas_natural','agua_corriente']},
+    {id:8,  dir:'San Martín Nº 981, Local 1',    tipo:'Local comercial', barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:900000,estado:'alquilado', hab:0,m2:24, desc:'3,50 m x 7,00 m. Baño, servicios funcionando, pisos y revestimientos en buen estado. Calefactor 3900 cal marca EMERGE.',                                        fotos:[],feats:['bano_completo','gas_envasado','agua_corriente']},
+    {id:9,  dir:'San Martín Nº 981, Local 2',    tipo:'Local comercial', barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'disponible',hab:0,m2:24, desc:'3,50 m x 7,00 m. Baño, servicios funcionando, pisos y revestimientos en buen estado. Calefactor 3900 cal marca EMERGE.',                                        fotos:[],feats:['bano_completo','gas_envasado','agua_corriente']},
+    {id:10, dir:'Av. Alvear 939, Piso 3 Dpto F', tipo:'Departamento',    barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'disponible',hab:2,m2:0,  desc:'Dos habitaciones, 1 baño, 1 cocina americana, 1 living comedor, 1 lavadero.',                                                                                    fotos:[],feats:['bano_completo','cocina_int','lavarropas_conex','gas_natural','agua_corriente']},
+    {id:11, dir:'Av. Alvear 939, Piso 3 Dpto E', tipo:'Departamento',    barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'disponible',hab:2,m2:0,  desc:'Dos habitaciones, 1 baño, 1 cocina americana, 1 living comedor, 1 lavadero.',                                                                                    fotos:[],feats:['bano_completo','cocina_int','lavarropas_conex','gas_natural','agua_corriente']},
+    {id:12, dir:'Av. Alvear 939, Piso 2 Dpto D', tipo:'Departamento',    barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'disponible',hab:2,m2:0,  desc:'Dos habitaciones, 1 baño, 1 cocina americana, 1 living comedor, 1 lavadero.',                                                                                    fotos:[],feats:['bano_completo','cocina_int','lavarropas_conex','gas_natural','agua_corriente']},
+    {id:13, dir:'Av. Alvear 939, Piso 2 Dpto C', tipo:'Departamento',    barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'disponible',hab:2,m2:0,  desc:'Dos habitaciones, 1 baño, 1 cocina americana, 1 living comedor, 1 lavadero.',                                                                                    fotos:[],feats:['bano_completo','cocina_int','lavarropas_conex','gas_natural','agua_corriente']},
+    {id:14, dir:'Av. Alvear 939, Piso 1 Dpto B', tipo:'Departamento',    barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'disponible',hab:2,m2:0,  desc:'Dos habitaciones, 1 baño, 1 cocina americana, 1 living comedor, 1 lavadero.',                                                                                    fotos:[],feats:['bano_completo','cocina_int','lavarropas_conex','gas_natural','agua_corriente']},
+    {id:15, dir:'Av. Alvear 939, Piso 1 Dpto A', tipo:'Departamento',    barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'disponible',hab:1,m2:0,  desc:'Una habitación, 1 baño, 1 cocina americana, 1 living comedor, 1 lavadero.',                                                                                       fotos:[],feats:['bano_completo','cocina_int','lavarropas_conex','gas_natural','agua_corriente']}
+  ],
+  nextId: 16,
+  inquilinos: [],
+  contratos: [],
+  cobros: [],
+  gastos: [],
+  incidencias: []
+};
 
-var supa = null; // initialized lazily in loadDB()
-
-var DB = { inmuebles:[], inquilinos:[], contratos:[], cobros:[], gastos:[], incidencias:[], nextId:1 };
-
-// ─────────────────────────────────────────────────────────────────────────
-// PERSISTENCIA — Supabase con fallback localStorage
-// ─────────────────────────────────────────────────────────────────────────
+// ============================================================
+// PERSISTENCIA localStorage
+// ============================================================
 var STORAGE_KEY = 'propmanager_v1';
-var SUPA_READY  = false;
 
-function mapInm(r)  { return {id:r.id,dir:r.dir,tipo:r.tipo,barrio:r.barrio,ciudad:r.ciudad||'Esquel',provincia:r.provincia||'Chubut',precio:r.precio||0,estado:r.estado||'disponible',hab:r.hab||0,m2:r.m2||0,desc:r.descripcion||'',fotos:r.fotos||[],feats:r.feats||[]}; }
-function mapInq(r)  { return {id:r.id,nombre:r.nombre,dni:r.dni||'',tel:r.tel||'',email:r.email||'',domicilio:r.domicilio||'',estadoCivil:r.estado_civil||'',ocupacion:r.ocupacion||'',estado:r.estado||'prospecto',inmId:r.inm_id||null,contrato:r.contrato||null,garante:r.garante||'',obs:r.obs||'',comprobantes:r.comprobantes||[],contrato_generado:r.contrato_generado||[]}; }
-function mapCt(r)   { return {id:r.id,num:r.num,inmId:r.inm_id,inqId:r.inq_id,inicio:r.inicio||'',fin:r.fin||'',monto:r.monto||0,estado:r.estado||'vigente'}; }
-function mapCobro(r){ return {id:r.id,ctId:r.ct_id,mes:r.mes||'',monto:r.monto||0,estado:r.estado||'pendiente',vence:r.vence||'',fechaEmision:r.fecha_emision||'',fechaPago:r.fecha_pago||'',medioPago:r.medio_pago||'',referencia:r.referencia||'',obs:r.obs||''}; }
-function mapGasto(r){ return {id:r.id,concepto:r.concepto,monto:r.monto||0,cat:r.cat||'',fecha:r.fecha||'',inmId:r.inm_id||null,obs:r.obs||''}; }
-function mapInc(r)  { return {id:r.id,inmId:r.inm_id,titulo:r.titulo,prio:r.prio||'media',estado:r.estado||'pendiente',fecha:r.fecha||'',inqNombre:r.inq_nombre||'—',desc:r.descripcion||''}; }
-
-async function loadDB() {
-  // Initialize Supabase client lazily (ensures CDN is loaded)
-  if(!supa && SUPA_URL !== 'REEMPLAZAR_CON_TU_URL') {
-    try {
-      // Try both window.supabase (CDN) and supabaseJs (alternate global)
-      var supaLib = window.supabase || window.supabaseJs;
-      if(!supaLib) {
-        console.error('Supabase CDN not loaded');
-        var el = document.getElementById('loading-msg');
-        if(el) el.textContent = 'Cargando librería...';
-        // Wait a bit and retry
-        await new Promise(function(r){ setTimeout(r, 1500); });
-        supaLib = window.supabase || window.supabaseJs;
-      }
-      if(supaLib) {
-        supa = supaLib.createClient(SUPA_URL, SUPA_KEY);
-        console.log('Supabase client created OK');
-      } else {
-        console.error('Supabase library not available after wait');
-      }
-    } catch(e) {
-      console.error('Supabase init error:', e);
-    }
-  }
-  if(!supa) {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return false;
-      var data = JSON.parse(raw);
-      if(data.inmuebles)   DB.inmuebles   = data.inmuebles;
-      if(data.inquilinos)  DB.inquilinos  = data.inquilinos;
-      if(data.contratos)   DB.contratos   = data.contratos;
-      if(data.cobros)      DB.cobros      = data.cobros;
-      if(data.gastos)      DB.gastos      = data.gastos;
-      if(data.incidencias) DB.incidencias = data.incidencias;
-      if(data.nextId)      DB.nextId      = data.nextId;
-      return true;
-    } catch(e) { return false; }
-  }
+function saveDB() {
   try {
-    var results = await Promise.all([
-      supa.from('inmuebles').select('*').order('id'),
-      supa.from('inquilinos').select('*').order('id'),
-      supa.from('contratos').select('*').order('id'),
-      supa.from('cobros').select('*').order('id'),
-      supa.from('gastos').select('*').order('id'),
-      supa.from('incidencias').select('*').order('id'),
-    ]);
-    for(var i=0;i<results.length;i++) { if(results[i].error) throw results[i].error; }
-    DB.inmuebles   = (results[0].data||[]).map(mapInm);
-    DB.inquilinos  = (results[1].data||[]).map(mapInq);
-    DB.contratos   = (results[2].data||[]).map(mapCt);
-    DB.cobros      = (results[3].data||[]).map(mapCobro);
-    DB.gastos      = (results[4].data||[]).map(mapGasto);
-    DB.incidencias = (results[5].data||[]).map(mapInc);
-    var allIds = DB.inmuebles.map(function(x){return x.id;});
-    DB.nextId = allIds.length ? Math.max.apply(null,allIds) + 1 : 1;
-    SUPA_READY = true;
+    // Save only mutable data (not static template config)
+    var data = {
+      inmuebles: DB.inmuebles.map(function(p) {
+        // Don't save full photo base64 in localStorage (too large) — save count only as placeholder
+        var p2 = Object.assign({}, p);
+        // Photos ARE saved — localStorage supports up to ~5MB, warn if too large
+        return p2;
+      }),
+      nextId: DB.nextId,
+      inquilinos: DB.inquilinos,
+      contratos: DB.contratos,
+      cobros: DB.cobros,
+      gastos: DB.gastos,
+      incidencias: DB.incidencias
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {
+    if(e.name === 'QuotaExceededError') {
+      // Photos too large — save without photos
+      try {
+        var data2 = {
+          inmuebles: DB.inmuebles.map(function(p){ return Object.assign({}, p, {fotos:[]}); }),
+          nextId: DB.nextId,
+          inquilinos: DB.inquilinos,
+          contratos: DB.contratos,
+          cobros: DB.cobros,
+          gastos: DB.gastos,
+          incidencias: DB.incidencias
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data2));
+        toast('Guardado sin fotos (espacio insuficiente)', '');
+      } catch(e2) { console.warn('localStorage save failed:', e2); }
+    } else { console.warn('localStorage save failed:', e); }
+  }
+}
+
+function loadDB() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    var data = JSON.parse(raw);
+    if(data.inmuebles) DB.inmuebles = data.inmuebles;
+    if(data.nextId) DB.nextId = data.nextId;
+    if(data.inquilinos) DB.inquilinos = data.inquilinos;
+    if(data.contratos) DB.contratos = data.contratos;
+    if(data.cobros) DB.cobros = data.cobros;
+    if(data.gastos) DB.gastos = data.gastos;
+    if(data.incidencias) DB.incidencias = data.incidencias;
     return true;
-  } catch(e) {
-    console.error('Supabase load error:', e);
-    var msg = e.message || String(e);
-    console.error('Supabase full error:', e);
-    toast('Error Supabase: ' + msg.slice(0,80), 'error');
-    // Fall back to localStorage
-    try {
-      var raw2 = localStorage.getItem(STORAGE_KEY);
-      if(raw2) {
-        var data2 = JSON.parse(raw2);
-        if(data2.inmuebles) DB.inmuebles = data2.inmuebles;
-        if(data2.inquilinos) DB.inquilinos = data2.inquilinos;
-        return true;
-      }
-    } catch(e2) {}
-    return false;
-  }
+  } catch(e) { console.warn('localStorage load failed:', e); return false; }
 }
 
-async function saveDB() {
-  if(!supa || !SUPA_READY) {
-    try {
-      var data = {
-        inmuebles: DB.inmuebles.map(function(p){ return Object.assign({},p,{fotos:[]}); }),
-        inquilinos:DB.inquilinos, contratos:DB.contratos, cobros:DB.cobros,
-        gastos:DB.gastos, incidencias:DB.incidencias, nextId:DB.nextId
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch(e) { console.warn('localStorage failed:', e); }
-    return;
-  }
-  try {
-    await Promise.all([
-      supa.from('inmuebles').upsert(DB.inmuebles.map(function(p){ return {id:p.id,dir:p.dir,tipo:p.tipo,barrio:p.barrio,ciudad:p.ciudad,provincia:p.provincia,precio:p.precio,estado:p.estado,hab:p.hab,m2:p.m2,descripcion:p.desc,fotos:p.fotos||[],feats:p.feats||[]}; }), {onConflict:'id'}),
-      supa.from('inquilinos').upsert(DB.inquilinos.map(function(i){ return {id:i.id,nombre:i.nombre,dni:i.dni,tel:i.tel,email:i.email,domicilio:i.domicilio,estado_civil:i.estadoCivil,ocupacion:i.ocupacion,estado:i.estado,inm_id:i.inmId||null,contrato:i.contrato,garante:i.garante,obs:i.obs,comprobantes:i.comprobantes||[],contrato_generado:i.contrato_generado||[]}; }), {onConflict:'id'}),
-      supa.from('contratos').upsert(DB.contratos.map(function(c){ return {id:c.id,num:c.num,inm_id:c.inmId,inq_id:c.inqId,inicio:c.inicio,fin:c.fin,monto:c.monto,estado:c.estado}; }), {onConflict:'id'}),
-      supa.from('cobros').upsert(DB.cobros.map(function(c){ return {id:c.id,ct_id:c.ctId,mes:c.mes,monto:c.monto,estado:c.estado,vence:c.vence,fecha_emision:c.fechaEmision,fecha_pago:c.fechaPago,medio_pago:c.medioPago,referencia:c.referencia,obs:c.obs}; }), {onConflict:'id'}),
-      supa.from('gastos').upsert(DB.gastos.map(function(g){ return {id:g.id,concepto:g.concepto,monto:g.monto,cat:g.cat,fecha:g.fecha,inm_id:g.inmId||null,obs:g.obs}; }), {onConflict:'id'}),
-      supa.from('incidencias').upsert(DB.incidencias.map(function(i){ return {id:i.id,inm_id:i.inmId,titulo:i.titulo,prio:i.prio,estado:i.estado,fecha:i.fecha,inq_nombre:i.inqNombre,desc:i.desc}; }), {onConflict:'id'}),
-    ]);
-  } catch(e) {
-    console.error('Supabase save error:', e);
-    toast('Error al guardar: ' + (e.message||e), 'error');
-  }
-}
-
-async function supaDeleteRow(table, id) {
-  if(!supa || !SUPA_READY) return;
-  var res = await supa.from(table).delete().eq('id', id);
-  if(res.error) console.error('Delete error:', res.error);
-}
-
-async function clearDB() {
-  if(!confirm('Borrar todos los datos y volver al estado inicial?')) return;
-  if(supa && SUPA_READY) {
-    await Promise.all([
-      supa.from('incidencias').delete().neq('id',0),
-      supa.from('cobros').delete().neq('id',0),
-      supa.from('contratos').delete().neq('id',0),
-      supa.from('inquilinos').delete().neq('id',0),
-      supa.from('gastos').delete().neq('id',0),
-      supa.from('inmuebles').delete().neq('id',0),
-    ]);
-  }
+function clearDB() {
+  if(!confirm('¿Borrar todos los datos guardados y volver al estado inicial?')) return;
   localStorage.removeItem(STORAGE_KEY);
   location.reload();
 }
 
+
+
+// ============================================================
+// FEATURES CATALOG
+// ============================================================
+var FEATS = [
+  {sec:'🚿 Baños',items:[{id:'bano_completo',ic:'🚿',lb:'Baño completo'},{id:'toilette',ic:'🚻',lb:'Toilette'},{id:'bano_suite',ic:'🛁',lb:'Baño en suite'},{id:'bide',ic:'🪠',lb:'Bidé'},{id:'jacuzzi',ic:'🛁',lb:'Jacuzzi'},{id:'ducha',ic:'🚿',lb:'Ducha independiente'}]},
+  {sec:'🍳 Cocina',items:[{id:'cocina_sep',ic:'🍳',lb:'Cocina separada'},{id:'cocina_int',ic:'🥘',lb:'Cocina integrada'},{id:'horno',ic:'♨️',lb:'Horno'},{id:'anafe_gas',ic:'🔥',lb:'Anafe a gas'},{id:'anafe_elec',ic:'⚡',lb:'Anafe eléctrico'},{id:'lavavajillas',ic:'🍽️',lb:'Lavavajillas'},{id:'heladera',ic:'❄️',lb:'Heladera incluida'},{id:'microondas',ic:'📦',lb:'Microondas'}]},
+  {sec:'🌡️ Climatización',items:[{id:'calef_central',ic:'🔥',lb:'Calefacción central'},{id:'calef_losa',ic:'🌡️',lb:'Losa radiante'},{id:'radiadores',ic:'♨️',lb:'Radiadores'},{id:'caldera',ic:'🏭',lb:'Caldera propia'},{id:'split',ic:'❄️',lb:'Split frío/calor'},{id:'aire_central',ic:'💨',lb:'Aire centralizado'},{id:'lena',ic:'🪵',lb:'Salamandra/Chimenea'}]},
+  {sec:'🏢 Seguridad',items:[{id:'portero',ic:'👨‍💼',lb:'Portero/Encargado'},{id:'portero_electrico',ic:'🔔',lb:'Portero eléctrico'},{id:'video_portero',ic:'📹',lb:'Videoportero'},{id:'seguridad_24',ic:'🔐',lb:'Seguridad 24hs'},{id:'alarma',ic:'🚨',lb:'Alarma propia'},{id:'camara',ic:'📷',lb:'Cámaras'}]},
+  {sec:'🅿️ Cochera',items:[{id:'cochera_fija',ic:'🚗',lb:'Cochera fija'},{id:'cochera_opc',ic:'🅿️',lb:'Cochera opcional'},{id:'baulera',ic:'📦',lb:'Baulera'},{id:'bicicletas',ic:'🚲',lb:'Guarda bicicletas'},{id:'ascensor',ic:'🛗',lb:'Ascensor'}]},
+  {sec:'🏊 Amenities',items:[{id:'pileta',ic:'🏊',lb:'Pileta'},{id:'gym',ic:'🏋️',lb:'Gimnasio'},{id:'sum',ic:'🎉',lb:'SUM'},{id:'solarium',ic:'☀️',lb:'Solarium/Terraza'},{id:'laundry',ic:'👕',lb:'Laundry'},{id:'parrilla_comun',ic:'🥩',lb:'Parrilla común'},{id:'coworking',ic:'💻',lb:'Coworking'}]},
+  {sec:'🏠 Características',items:[{id:'balcon',ic:'🏙️',lb:'Balcón'},{id:'terraza',ic:'🌿',lb:'Terraza propia'},{id:'patio',ic:'🌳',lb:'Patio'},{id:'jardin',ic:'🌺',lb:'Jardín'},{id:'parrilla_propia',ic:'🔥',lb:'Parrilla propia'},{id:'luminoso',ic:'☀️',lb:'Muy luminoso'},{id:'piso_madera',ic:'🪵',lb:'Piso madera'},{id:'porcelanato',ic:'⬜',lb:'Porcelanato'},{id:'placares',ic:'🚪',lb:'Placares'},{id:'vestidor',ic:'👔',lb:'Vestidor'}]},
+  {sec:'⚡ Servicios',items:[{id:'gas_natural',ic:'🔥',lb:'Gas natural'},{id:'gas_env',ic:'🫙',lb:'Gas envasado'},{id:'calefon',ic:'🚿',lb:'Calefón'},{id:'termotanque',ic:'🌡️',lb:'Termotanque'},{id:'internet',ic:'📶',lb:'Fibra óptica'},{id:'tv_cable',ic:'📺',lb:'TV por cable'},{id:'paneles',ic:'☀️',lb:'Paneles solares'}]},
+  {sec:'📜 Estado',items:[{id:'apt_profesional',ic:'💼',lb:'Apto profesional'},{id:'apt_comercial',ic:'🏪',lb:'Apto comercial'},{id:'reciclado',ic:'✨',lb:'Reciclado'},{id:'a_estrenar',ic:'🆕',lb:'A estrenar'},{id:'mascotas',ic:'🐾',lb:'Acepta mascotas'},{id:'amoblado',ic:'🛋️',lb:'Amoblado'},{id:'semi_amoblado',ic:'🪑',lb:'Semi-amoblado'}]}
+];
+
+function allFeatItems() {
+  var out = [];
+  FEATS.forEach(function(s){ s.items.forEach(function(i){ out.push(i); }); });
+  return out;
+}
+
+function featById(id) {
+  return allFeatItems().find(function(f){ return f.id === id; });
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function h(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtPeso(n){ return '$' + Number(n).toLocaleString('es-AR'); }
+function toast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + (type||''); t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3200);
+}
+function badge(cls, txt){ return '<span class="badge ' + cls + '">' + h(txt) + '</span>'; }
+function statusBadge(estado) {
+  var m = {alquilado:'badge-green',disponible:'badge-amber',mantenimiento:'badge-gray',vigente:'badge-green',prospecto:'badge-blue',activo:'badge-green',pendiente:'badge-amber',cobrado:'badge-green','en progreso':'badge-blue',resuelto:'badge-green'};
+  return badge(m[estado]||'badge-gray', estado);
+}
+function getInm(id){ return DB.inmuebles.find(function(x){ return x.id===id; }); }
+function getInq(id){ return DB.inquilinos.find(function(x){ return x.id===id; }); }
+function getCt(id){ return DB.contratos.find(function(x){ return x.id===id; }); }
+function ctByInm(inmId){ return DB.contratos.find(function(c){ return c.inmId===inmId && c.estado==='vigente'; }); }
+
+// ============================================================
+// ROUTER
+// ============================================================
+var PAGE = 'dashboard';
+var CONTRACT_STEP = 1;
+var CONTRACT_DATA = {};
+
+function nav(page) {
+  PAGE = page;
+  document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.remove('active'); });
+  var el = document.getElementById('nav-' + page);
+  if(el) el.classList.add('active');
+  renderPage();
+}
+
+function renderPage() {
+  var main = document.getElementById('main');
+  var pages = {dashboard:pgDashboard,inmuebles:pgInmuebles,inquilinos:pgInquilinos,contratos:pgContratos,mantenimiento:pgMantenimiento,financiero:pgFinanciero,facturacion:pgFacturacion,informes:pgInformes};
+  if(pages[PAGE]) pages[PAGE](main);
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openModal(title, bodyEl, wide, footerEl) {
+  closeModal();
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay'; ov.id = 'modal-ov';
+  var m = document.createElement('div');
+  m.className = 'modal' + (wide ? ' wide' : '');
+  // header
+  var hdr = document.createElement('div'); hdr.className = 'modal-header';
+  var ttl = document.createElement('div'); ttl.className = 'modal-title'; ttl.textContent = title;
+  var cls = document.createElement('button'); cls.className = 'btn btn-ghost'; cls.style.padding = '4px 8px';
+  cls.textContent = '✕'; cls.onclick = closeModal;
+  hdr.appendChild(ttl); hdr.appendChild(cls);
+  // body
+  var bdy = document.createElement('div'); bdy.className = 'modal-body';
+  if(typeof bodyEl === 'string') { bdy.innerHTML = bodyEl; } else { bdy.appendChild(bodyEl); }
+  m.appendChild(hdr); m.appendChild(bdy);
+  if(footerEl) { var ftr = document.createElement('div'); ftr.className = 'modal-footer'; ftr.appendChild(footerEl); m.appendChild(ftr); }
+  ov.appendChild(m);
+  ov.addEventListener('click', function(e){ if(e.target===ov) closeModal(); });
+  document.body.appendChild(ov);
+  requestAnimationFrame(function(){ ov.classList.add('open'); });
+}
+
+function closeModal() {
+  var ov = document.getElementById('modal-ov');
+  if(!ov) return;
+  ov.classList.remove('open');
+  setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }, 200);
+}
+
+function modalFooter(btns) {
+  var ftr = document.createDocumentFragment();
+  var cancel = document.createElement('button');
+  cancel.className = 'btn btn-secondary'; cancel.textContent = 'Cancelar'; cancel.onclick = closeModal;
+  ftr.appendChild(cancel);
+  btns.forEach(function(b) {
+    var btn = document.createElement('button');
+    btn.className = 'btn ' + b.cls; btn.textContent = b.label; btn.onclick = b.action;
+    ftr.appendChild(btn);
+  });
+  var wrap = document.createElement('div');
+  wrap.style.display='contents';
+  wrap.appendChild(ftr);
+  // Actually return a real element
+  var w2 = document.createElement('div'); w2.style.cssText='display:flex;align-items:center;gap:10px';
+  w2.appendChild(cancel);
+  btns.forEach(function(b) {
+    var btn = document.createElement('button');
+    btn.className = 'btn ' + b.cls; btn.textContent = b.label; btn.onclick = b.action;
+    w2.appendChild(btn);
+  });
+  return w2;
+}
+
+// ============================================================
+// FEATURE CHIP BUILDER (DOM-based, no template nesting)
+// ============================================================
+function buildFeatChips(selectedIds) {
+  var wrap = document.createElement('div');
+  FEATS.forEach(function(sec) {
+    var secDiv = document.createElement('div'); secDiv.className = 'feat-section';
+    var secLabel = document.createElement('div'); secLabel.className = 'feat-section-label'; secLabel.textContent = sec.sec;
+    var grid = document.createElement('div'); grid.className = 'feat-grid';
+    sec.items.forEach(function(item) {
+      var chip = document.createElement('div');
+      chip.className = 'feat-chip' + (selectedIds.indexOf(item.id) > -1 ? ' on' : '');
+      chip.dataset.featId = item.id;
+      chip.innerHTML = '<span class="feat-chip-icon">' + item.ic + '</span><span class="feat-chip-label">' + h(item.lb) + '</span><span class="feat-chip-check"></span>';
+      chip.addEventListener('click', function() { chip.classList.toggle('on'); });
+      grid.appendChild(chip);
+    });
+    secDiv.appendChild(secLabel); secDiv.appendChild(grid);
+    wrap.appendChild(secDiv);
+  });
+  return wrap;
+}
+
+function getSelectedFeats(container) {
+  var out = [];
+  container.querySelectorAll('.feat-chip.on').forEach(function(chip){ out.push(chip.dataset.featId); });
+  return out;
+}
+
+// ============================================================
+// INMUEBLE FORM BUILDER
+// ============================================================
+function buildInmForm(inm) {
+  var p = inm || {};
+  var wrap = document.createElement('div');
+  var tipos = ['Departamento','Local comercial','Oficina','Casa','PH','Loft'];
+  var estados = ['disponible','alquilado','mantenimiento'];
+  wrap.innerHTML = [
+    '<div class="form-grid" style="margin-bottom:20px">',
+    '<div class="form-field full"><label>Dirección completa</label><input id="f-dir" type="text" placeholder="Av. Corrientes 1234, Piso 2 A" value="' + h(p.dir||'') + '"></div>',
+    '<div class="form-field"><label>Barrio</label><input id="f-barrio" type="text" placeholder="Palermo" value="' + h(p.barrio||'') + '"></div>',
+    '<div class="form-field"><label>Tipo</label><select id="f-tipo">' + tipos.map(function(t){ return '<option' + (p.tipo===t?' selected':'') + '>' + t + '</option>'; }).join('') + '</select></div>',
+    '<div class="form-field"><label>Superficie (m²)</label><input id="f-m2" type="number" placeholder="65" value="' + h(p.m2||'') + '"></div>',
+    '<div class="form-field"><label>Ambientes</label><input id="f-hab" type="number" placeholder="2" value="' + h(p.hab||'') + '"></div>',
+    '<div class="form-field"><label>Dormitorios</label><input id="f-dorm" type="number" placeholder="1" value="' + h(p.dorm||'') + '"></div>',
+    '<div class="form-field"><label>Baños</label><input id="f-banos" type="number" placeholder="1" value="' + h(p.banos||'') + '"></div>',
+    '<div class="form-field"><label>Piso N°</label><input id="f-piso" type="text" placeholder="4" value="' + h(p.piso||'') + '"></div>',
+    '<div class="form-field"><label>Precio mensual ($)</label><input id="f-precio" type="number" placeholder="280000" value="' + h(p.precio||'') + '"></div>',
+    '<div class="form-field"><label>Expensas aprox. ($)</label><input id="f-expensas" type="number" placeholder="45000" value="' + h(p.expensas||'') + '"></div>',
+    '<div class="form-field"><label>Estado</label><select id="f-estado">' + estados.map(function(s){ return '<option' + (p.estado===s?' selected':'') + '>' + s + '</option>'; }).join('') + '</select></div>',
+    '<div class="form-field full"><label>Descripción</label><textarea id="f-desc" placeholder="Descripción del inmueble...">' + h(p.desc||'') + '</textarea></div>',
+    '</div>',
+    '<div class="form-section-title">Características y equipamiento <span style="font-family:var(--sans);font-size:12px;font-weight:400;color:var(--text3)">Seleccioná todo lo que aplica</span></div>'
+  ].join('');
+  var chips = buildFeatChips(p.feats||[]);
+  wrap.appendChild(chips);
+  return wrap;
+}
+
+function readInmForm(wrap) {
+  return {
+    dir: wrap.querySelector('#f-dir').value.trim(),
+    barrio: wrap.querySelector('#f-barrio').value.trim(),
+    tipo: wrap.querySelector('#f-tipo').value,
+    m2: parseInt(wrap.querySelector('#f-m2').value)||0,
+    hab: parseInt(wrap.querySelector('#f-hab').value)||0,
+    dorm: parseInt(wrap.querySelector('#f-dorm').value)||0,
+    banos: parseInt(wrap.querySelector('#f-banos').value)||0,
+    piso: wrap.querySelector('#f-piso').value.trim(),
+    precio: parseInt(wrap.querySelector('#f-precio').value)||0,
+    expensas: parseInt(wrap.querySelector('#f-expensas').value)||0,
+    estado: wrap.querySelector('#f-estado').value,
+    desc: wrap.querySelector('#f-desc').value.trim(),
+    feats: getSelectedFeats(wrap)
+  };
+}
+
+// ============================================================
+// PHOTOS
+// ============================================================
+var LB_INM = null; var LB_IDX = 0;
+
+function buildPhotoSection(inmId) {
+  var inm = getInm(inmId);
+  var wrap = document.createElement('div');
+  wrap.style.marginBottom = '18px';
+  var topRow = document.createElement('div');
+  topRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px';
+  var lbl = document.createElement('div');
+  lbl.style.cssText = 'font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em';
+  lbl.textContent = 'Fotos del inmueble';
+  var uploadLabel = document.createElement('label');
+  uploadLabel.className = 'btn btn-secondary';
+  uploadLabel.style.cssText = 'cursor:pointer;font-size:12px;padding:5px 12px';
+  uploadLabel.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Subir fotos';
+  var fileInput = document.createElement('input');
+  fileInput.type='file'; fileInput.accept='image/*'; fileInput.multiple=true; fileInput.style.display='none';
+  fileInput.addEventListener('change', function(){ handlePhotoUpload(inmId, fileInput, zone); });
+  uploadLabel.appendChild(fileInput);
+  topRow.appendChild(lbl); topRow.appendChild(uploadLabel);
+  var zone = document.createElement('div');
+  zone.id = 'photo-zone-' + inmId;
+  renderPhotoZone(zone, inm);
+  wrap.appendChild(topRow); wrap.appendChild(zone);
+  return wrap;
+}
+
+function renderPhotoZone(zone, inm) {
+  zone.innerHTML = '';
+  if(!inm.fotos || inm.fotos.length === 0) {
+    zone.className = 'photo-zone empty';
+    zone.innerHTML = '<div style="text-align:center"><div style="font-size:28px;opacity:.3;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text3)">Sin fotos · subí imágenes con el botón</div></div>';
+    return;
+  }
+  zone.className = 'photo-zone';
+  inm.fotos.forEach(function(src, idx) {
+    var wrap = document.createElement('div'); wrap.className = 'photo-thumb-wrap';
+    var img = document.createElement('img'); img.src = src; img.alt = 'foto ' + (idx+1);
+    img.addEventListener('click', function(){ openLB(inm.id, idx); });
+    var del = document.createElement('button'); del.className = 'photo-del'; del.innerHTML = '&#10005;';
+    del.addEventListener('click', function(e){ e.stopPropagation(); deletePhoto(inm.id, idx, zone); });
+    wrap.appendChild(img); wrap.appendChild(del); zone.appendChild(wrap);
+  });
+}
+
+function handlePhotoUpload(inmId, input, zone) {
+  var inm = getInm(inmId); if(!inm) return;
+  var files = Array.from(input.files); var loaded = 0;
+  files.forEach(function(file) {
+    var r = new FileReader();
+    r.onload = function(e) {
+      inm.fotos.push(e.target.result); loaded++;
+      if(loaded === files.length) {
+        renderPhotoZone(zone, inm);
+        refreshGrid();
+        saveDB(); toast(files.length + ' foto' + (files.length>1?'s':'') + ' agregada' + (files.length>1?'s':''), 'success');
+      }
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+function deletePhoto(inmId, idx, zone) {
+  var inm = getInm(inmId); if(!inm) return;
+  inm.fotos.splice(idx, 1);
+  renderPhotoZone(zone, inm);
+  refreshGrid(); saveDB();
+}
+
+function openLB(inmId, idx) {
+  var inm = getInm(inmId); if(!inm||!inm.fotos.length) return;
+  LB_INM = inmId; LB_IDX = idx;
+  document.getElementById('lb-img').src = inm.fotos[idx];
+  document.getElementById('lb-counter').textContent = (idx+1) + ' / ' + inm.fotos.length;
+  document.getElementById('lb-prev').style.display = inm.fotos.length > 1 ? 'flex' : 'none';
+  document.getElementById('lb-next').style.display = inm.fotos.length > 1 ? 'flex' : 'none';
+  document.getElementById('lightbox').style.display = 'flex';
+}
+
+function lbNav(dir) {
+  var inm = getInm(LB_INM); if(!inm) return;
+  LB_IDX = (LB_IDX + dir + inm.fotos.length) % inm.fotos.length;
+  document.getElementById('lb-img').src = inm.fotos[LB_IDX];
+  document.getElementById('lb-counter').textContent = (LB_IDX+1) + ' / ' + inm.fotos.length;
+}
+
+function closeLB() { document.getElementById('lightbox').style.display = 'none'; }
+
+// ============================================================
+// PAGE: DASHBOARD
+// ============================================================
+// ─────────────────────────────────────────────────────────────────
 // SHARED FILTER STATE
 // ─────────────────────────────────────────────────────────────────
 var FILTER = {
@@ -2468,39 +2709,111 @@ function exportarInformeCSV() {
 }
 
 
+// ─────────────────────────────────────────────────────────────────
+// REPORTAR ERROR
+// ─────────────────────────────────────────────────────────────────
+function openReportarError() {
+  var hoy = new Date().toLocaleString('es-AR');
+  var pagina = PAGE || 'dashboard';
+  var supaEstado = SUPA_READY ? 'Conectado' : 'Sin conexión';
+
+  var bodyEl = document.createElement('div');
+  bodyEl.innerHTML =
+    '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--text3)">' +
+    '<div style="margin-bottom:4px">📅 <strong>Fecha:</strong> ' + hoy + '</div>' +
+    '<div style="margin-bottom:4px">📍 <strong>Sección:</strong> ' + h(pagina) + '</div>' +
+    '<div>🔌 <strong>Supabase:</strong> ' + supaEstado + '</div>' +
+    '</div>' +
+    '<div class="form-grid">' +
+    '<div class="form-field full"><label>¿Qué estabas haciendo cuando ocurrió el error? *</label>' +
+    '<input id="rep-accion" type="text" placeholder="ej: Estaba agregando un inquilino y al guardar..."></div>' +
+    '<div class="form-field full"><label>Descripción del error *</label>' +
+    '<textarea id="rep-desc" style="min-height:100px" placeholder="Describí lo que pasó, qué mensaje de error apareció, si se repite..."></textarea></div>' +
+    '<div class="form-field"><label>Tu nombre</label>' +
+    '<input id="rep-nombre" type="text" placeholder="ej: María"></div>' +
+    '<div class="form-field"><label>Prioridad</label>' +
+    '<select id="rep-prio"><option value="normal">Normal — puedo seguir trabajando</option><option value="alta">Alta — bloquea mi trabajo</option><option value="critica">Crítica — la app no funciona</option></select></div>' +
+    '</div>';
+
+  var footer = modalFooter([{
+    label: 'Enviar reporte',
+    cls: 'btn-primary',
+    action: function() {
+      var accion = document.getElementById('rep-accion').value.trim();
+      var desc   = document.getElementById('rep-desc').value.trim();
+      var nombre = document.getElementById('rep-nombre').value.trim() || 'Usuario';
+      var prio   = document.getElementById('rep-prio').value;
+
+      if(!accion || !desc) { toast('Completá la acción y la descripción', 'error'); return; }
+
+      var prioLabel = {normal:'Normal',alta:'Alta ⚠️',critica:'CRÍTICA 🚨'}[prio] || 'Normal';
+
+      var asunto = encodeURIComponent('[PropManager] Error ' + prioLabel + ' — ' + pagina);
+      var cuerpo = encodeURIComponent(
+        'REPORTE DE ERROR - PropManager\n' +
+        '================================\n\n' +
+        'Fecha: ' + hoy + '\n' +
+        'Seccion: ' + pagina + '\n' +
+        'Supabase: ' + supaEstado + '\n' +
+        'Prioridad: ' + prioLabel + '\n' +
+        'Reportado por: ' + nombre + '\n\n' +
+        'QUE ESTABA HACIENDO:\n' + accion + '\n\n' +
+        'DESCRIPCION DEL ERROR:\n' + desc + '\n\n' +
+        '================================\n' +
+        'PropManager - Carolina Gerosa - Esquel, Chubut'
+      );
+
+      // Open email client with pre-filled report
+      window.location.href = 'mailto:carolina.gerosa.parra@gmail.com?subject=' + asunto + '&body=' + cuerpo;
+
+      // Also save the report locally
+      if(!DB.reportes) DB.reportes = [];
+      DB.reportes.push({
+        fecha: hoy, pagina: pagina, accion: accion,
+        desc: desc, nombre: nombre, prio: prio, enviado: true
+      });
+
+      closeModal();
+      toast('Reporte preparado — se abrió tu app de email', 'success');
+    }
+  }]);
+
+  openModal('Reportar un error', bodyEl, false, footer);
+}
+
+// También permitir reportar errores con un acceso rápido desde cualquier módulo
+// (botón flotante visible solo en errores críticos — opcional activar)
+function mostrarBotonError(mensajeError) {
+  var existing = document.getElementById('floating-error-btn');
+  if(existing) existing.remove();
+
+  var btn = document.createElement('button');
+  btn.id = 'floating-error-btn';
+  btn.style.cssText = 'position:fixed;bottom:60px;right:24px;z-index:150;background:var(--red);color:white;border:none;border-radius:50px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(184,58,46,.4);display:flex;align-items:center;gap:8px;font-family:var(--sans);animation:fadeIn .3s ease';
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Reportar este error';
+  btn.onclick = function() { openReportarError(); };
+  document.body.appendChild(btn);
+
+  // Auto-hide after 30 seconds
+  setTimeout(function() {
+    if(btn.parentNode) btn.style.opacity = '0';
+    setTimeout(function() { if(btn.parentNode) btn.parentNode.removeChild(btn); }, 500);
+  }, 30000);
+}
+
+
 // ============================================================
 // INIT
 // ============================================================
-(async function() {
-  document.getElementById('main').innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:16px">' +
-    '<div style="width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div>' +
-    '<div style="font-size:13px;color:var(--text3)" id="loading-msg">Iniciando...</div>' +
-    '</div>';
-  // Update message after short delay
+// Load persisted data
+var loaded = loadDB();
+nav('dashboard');
+if(loaded) {
+  // Show subtle indicator that data was restored
   setTimeout(function(){
-    var el = document.getElementById('loading-msg');
-    if(el) el.textContent = window.supabase ? 'Conectando con Supabase...' : 'Cargando datos locales...';
-  }, 300);
-  // Safety timeout — if loadDB takes more than 8s, show error
-  var loadTimeout = setTimeout(function(){
-    var el = document.getElementById('loading-msg');
-    if(el) el.innerHTML = 'Error de conexión. <button onclick="location.reload()" style="color:var(--gold-dark);text-decoration:underline;background:none;border:none;cursor:pointer;font-size:13px">Reintentar</button>';
-  }, 8000);
-  var spinStyle = document.createElement('style');
-  spinStyle.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
-  document.head.appendChild(spinStyle);
-
-  var loaded = await loadDB();
-  clearTimeout(loadTimeout);
-  nav('dashboard');
-  if(loaded) {
-    setTimeout(function(){
-      toast(SUPA_READY ? 'Conectado · Supabase' : 'Datos cargados', 'success');
-    }, 400);
-  }
-})();
+    toast('Datos restaurados correctamente', 'success');
+  }, 500);
+}
 </script>
-
 </body>
 </html>

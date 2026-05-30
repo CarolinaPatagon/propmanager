@@ -458,7 +458,7 @@ textarea { resize:vertical; min-height:80px; }
 /* ── DIVIDER ── */
 hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
 <div class="app">
@@ -540,7 +540,7 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
 // SUPABASE CONFIG — reemplazá con tus credenciales
 // ─────────────────────────────────────────────────────────────────────────
 var SUPA_URL = 'https://jtiyirhogrdoszhyqqqq.supabase.co';
-var SUPA_KEY = 'sb_publishable_04PNnAVSFFluqzaxrK-2og_58cNF06-';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgwMTQ2MDg4LCJleHAiOjIwOTU1MDYwODh9.2yqJ_aj76Z_xKbIzX-NK-sllIrtc8LMOFyvnli8AkZU';
 
 var supa = null; // initialized lazily in loadDB()
 
@@ -561,9 +561,24 @@ function mapInc(r)  { return {id:r.id,inmId:r.inm_id,titulo:r.titulo,prio:r.prio
 
 async function loadDB() {
   // Initialize Supabase client lazily (ensures CDN is loaded)
-  if(!supa && window.supabase && SUPA_URL !== 'REEMPLAZAR_CON_TU_URL') {
+  if(!supa && SUPA_URL !== 'REEMPLAZAR_CON_TU_URL') {
     try {
-      supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+      // Try both window.supabase (CDN) and supabaseJs (alternate global)
+      var supaLib = window.supabase || window.supabaseJs;
+      if(!supaLib) {
+        console.error('Supabase CDN not loaded');
+        var el = document.getElementById('loading-msg');
+        if(el) el.textContent = 'Cargando librería...';
+        // Wait a bit and retry
+        await new Promise(function(r){ setTimeout(r, 1500); });
+        supaLib = window.supabase || window.supabaseJs;
+      }
+      if(supaLib) {
+        supa = supaLib.createClient(SUPA_URL, SUPA_KEY);
+        console.log('Supabase client created OK');
+      } else {
+        console.error('Supabase library not available after wait');
+      }
     } catch(e) {
       console.error('Supabase init error:', e);
     }
@@ -605,7 +620,19 @@ async function loadDB() {
     return true;
   } catch(e) {
     console.error('Supabase load error:', e);
-    toast('Error al conectar con Supabase: ' + (e.message||e), 'error');
+    var msg = e.message || String(e);
+    console.error('Supabase full error:', e);
+    toast('Error Supabase: ' + msg.slice(0,80), 'error');
+    // Fall back to localStorage
+    try {
+      var raw2 = localStorage.getItem(STORAGE_KEY);
+      if(raw2) {
+        var data2 = JSON.parse(raw2);
+        if(data2.inmuebles) DB.inmuebles = data2.inmuebles;
+        if(data2.inquilinos) DB.inquilinos = data2.inquilinos;
+        return true;
+      }
+    } catch(e2) {}
     return false;
   }
 }
@@ -2448,13 +2475,24 @@ function exportarInformeCSV() {
   document.getElementById('main').innerHTML =
     '<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:16px">' +
     '<div style="width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite"></div>' +
-    '<div style="font-size:13px;color:var(--text3)">' + (window.supabase && SUPA_URL !== 'REEMPLAZAR_CON_TU_URL' ? 'Conectando con Supabase...' : 'Cargando datos...') + '</div>' +
+    '<div style="font-size:13px;color:var(--text3)" id="loading-msg">Iniciando...</div>' +
     '</div>';
+  // Update message after short delay
+  setTimeout(function(){
+    var el = document.getElementById('loading-msg');
+    if(el) el.textContent = window.supabase ? 'Conectando con Supabase...' : 'Cargando datos locales...';
+  }, 300);
+  // Safety timeout — if loadDB takes more than 8s, show error
+  var loadTimeout = setTimeout(function(){
+    var el = document.getElementById('loading-msg');
+    if(el) el.innerHTML = 'Error de conexión. <button onclick="location.reload()" style="color:var(--gold-dark);text-decoration:underline;background:none;border:none;cursor:pointer;font-size:13px">Reintentar</button>';
+  }, 8000);
   var spinStyle = document.createElement('style');
   spinStyle.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
   document.head.appendChild(spinStyle);
 
   var loaded = await loadDB();
+  clearTimeout(loadTimeout);
   nav('dashboard');
   if(loaded) {
     setTimeout(function(){

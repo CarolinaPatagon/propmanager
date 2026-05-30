@@ -558,6 +558,9 @@ var DB = {
     {id:15, dir:'Av. Alvear 939, Piso 1 Dpto A', tipo:'Departamento',    barrio:'Esquel',ciudad:'Esquel',provincia:'Chubut',precio:0,     estado:'disponible',hab:1,m2:0,  desc:'Una habitación, 1 baño, 1 cocina americana, 1 living comedor, 1 lavadero.',                                                                                       fotos:[],feats:['bano_completo','cocina_int','lavarropas_conex','gas_natural','agua_corriente']}
   ],
   nextId: 16,
+  locadores: [
+    {id:1, nombre:'Carolina Gerosa', cuit:'27-XXXXXXXXX-X', domicilio:'25 de Mayo 498, Esquel', tel:'02945 462624', email:'carolina.gerosa.parra@gmail.com', inmuebles:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], default:true}
+  ],
   inquilinos: [],
   contratos: [],
   cobros: [],
@@ -683,6 +686,9 @@ function ctByInm(inmId){ return DB.contratos.find(function(c){ return c.inmId===
 var PAGE = 'dashboard';
 var CONTRACT_STEP = 1;
 var CONTRACT_DATA = {};
+
+function getLoc(id) { return (DB.locadores||[]).find(function(l){ return l.id===id; }); }
+function getDefaultLoc() { return (DB.locadores||[]).find(function(l){ return l.default; }) || (DB.locadores||[])[0] || {nombre:'Carolina Gerosa',cuit:'',domicilio:'',tel:'',email:''}; }
 
 function nav(page) {
   PAGE = page;
@@ -2131,131 +2137,716 @@ function openAddInq() {
 // ============================================================
 // PAGE: CONTRATOS
 // ============================================================
+// ============================================================
+// PAGE: CONTRATOS
+// ============================================================
 function pgContratos(el) {
-  CONTRACT_STEP = 1; CONTRACT_DATA = {inmId:null,locatario:{},garante:{},condiciones:{}};
+  CONTRACT_STEP = 1;
+  CONTRACT_DATA = {inmId:null, locId:null, locatario:{}, garante:{}, condiciones:{}};
   var rows = DB.contratos.map(function(c) {
-    var inm = getInm(c.inmId); var inq = getInq(c.inqId);
+    var inm=getInm(c.inmId); var inq=getInq(c.inqId); var loc=getLoc(c.locId);
     return '<tr>' +
       '<td style="font-weight:500;font-size:12px;font-family:monospace;color:var(--accent-dark)">' + h(c.num) + '</td>' +
-      '<td><div style="font-size:13px;font-weight:500">' + h(inm?inm.barrio:'—') + '</div><div style="font-size:12px;color:var(--text3)">' + h(inm?inm.dir.split(',')[0]:'—') + '</div></td>' +
+      '<td><div style="font-size:13px;font-weight:500">' + h(inm?inm.dir.split(',')[0]:'—') + '</div>' +
+      '<div style="font-size:11px;color:var(--text3)">' + h(inm?inm.tipo:'') + '</div></td>' +
       '<td>' + h(inq?inq.nombre:'—') + '</td>' +
+      '<td style="font-size:12px;color:var(--text3)">' + h(loc?loc.nombre:'Carolina Gerosa') + '</td>' +
       '<td style="font-size:12px"><div>' + h(c.inicio) + '</div><div style="color:var(--text3)">hasta ' + h(c.fin) + '</div></td>' +
       '<td style="font-weight:500">' + fmtPeso(c.monto) + '</td>' +
       '<td>' + statusBadge(c.estado) + '</td>' +
-      '<td><button class="btn btn-ghost" style="font-size:12px" onclick="regenContract(' + c.id + ')">⬇ Descargar</button></td></tr>';
-  }).join('');
-  el.innerHTML = '<div class="page-header"><div><div class="page-title">Contratos</div><div class="page-subtitle">' + DB.contratos.filter(function(c){return c.estado==='vigente';}).length + ' contratos activos</div></div>' +
-    '<button class="btn btn-primary" onclick="startContractWizard()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo contrato</button></div>' +
+      '<td><button class="btn btn-ghost" style="font-size:12px" onclick="regenContract(' + c.id + ')">⬇ Descargar</button></td>' +
+      '</tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">Sin contratos — hacé clic en "+ Nuevo contrato" para crear uno</td></tr>';
+
+  el.innerHTML =
+    '<div class="page-header">' +
+    '<div><div class="page-title">Contratos</div>' +
+    '<div class="page-subtitle">' + DB.contratos.filter(function(c){return c.estado==='vigente';}).length + ' contratos activos</div></div>' +
+    '<div style="display:flex;gap:8px">' +
+    '<button class="btn btn-secondary" onclick="nav(&apos;locadores&apos;)" style="font-size:13px">&#128100; Locadores</button>' +
+    '<button class="btn btn-primary" onclick="startContractWizard()">+ Nuevo contrato</button>' +
+    '</div></div>' +
     '<div class="page-content fade-in" id="ct-content">' +
-    '<div class="table-wrap"><table><thead><tr><th>Número</th><th>Inmueble</th><th>Locatario</th><th>Vigencia</th><th>Alquiler/mes</th><th>Estado</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+    '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Número</th><th>Inmueble</th><th>Locatario</th><th>Locador</th><th>Vigencia</th><th>Alquiler</th><th>Estado</th><th></th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
 }
 
 function startContractWizard() {
-  CONTRACT_STEP = 1; CONTRACT_DATA = {inmId:null,locatario:{},garante:{},condiciones:{}};
+  CONTRACT_STEP = 1;
+  CONTRACT_DATA = {inmId:null, locId:(getDefaultLoc()||{}).id||null, locatario:{}, garante:{}, condiciones:{}};
   renderWizard();
 }
 
 function renderWizard() {
   var el = document.getElementById('ct-content'); if(!el) return;
-  var steps = ['Seleccionar inmueble','Datos del locatario','Condiciones','Generar contrato'];
+  var steps = ['Inmueble y Locador','Locatario','Condiciones','Generar'];
   var stepHTML = steps.map(function(s,i) {
     var n=i+1, cls=n<CONTRACT_STEP?'done':n===CONTRACT_STEP?'active':'pending';
-    return '<div class="step"><div class="step-circle ' + cls + '">' + (n<CONTRACT_STEP?'✓':n) + '</div>' +
+    return '<div class="step">' +
+      '<div class="step-circle ' + cls + '">' + (n<CONTRACT_STEP?'✓':n) + '</div>' +
       '<div class="step-label ' + cls + '">' + s + '</div>' +
-      (n<steps.length?'<div class="step-line ' + (n<CONTRACT_STEP?'done':'') + '"></div>':'') + '</div>';
+      (n<steps.length?'<div class="step-line '+(n<CONTRACT_STEP?'done':'')+'"></div>':'') +
+      '</div>';
   }).join('');
 
   var content = '';
+
+  // ── STEP 1: Inmueble + Locador ───────────────────────────────────────
   if(CONTRACT_STEP===1) {
-    var avail = DB.inmuebles.filter(function(p){return p.estado==='disponible';});
-    content = '<div class="form-section-title">Seleccioná el inmueble a alquilar</div>' +
-      (avail.length===0?'<p style="color:var(--text3)">No hay inmuebles disponibles.</p>':'') +
-      '<div style="display:flex;flex-direction:column;gap:10px">' +
-      avail.map(function(p){
-        return '<div id="s-' + p.id + '" onclick="selectInm(' + p.id + ')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .15s">' +
-          '<div style="font-size:32px;opacity:.6">🏠</div><div style="flex:1"><div style="font-weight:500">' + h(p.dir) + '</div><div style="font-size:12px;color:var(--text3)">' + h(p.barrio) + ' · ' + p.m2 + 'm²</div></div>' +
-          '<div style="text-align:right"><div style="font-family:var(--serif);font-size:17px;color:var(--accent-dark)">' + fmtPeso(p.precio) + '</div><div style="font-size:11px;color:var(--text3)">por mes</div></div>' +
-          '<div id="chk-' + p.id + '" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center"></div></div>';
-      }).join('') + '</div>' +
-      '<div style="margin-top:20px;display:flex;justify-content:flex-end"><button class="btn btn-primary" id="btn-ct-next" onclick="ctNext()" disabled>Continuar →</button></div>';
+    var avail = DB.inmuebles.filter(function(p){return p.estado!=='mantenimiento';});
+    var locOpts = (DB.locadores||[]).map(function(l){
+      return '<option value="'+l.id+'"'+(CONTRACT_DATA.locId===l.id?' selected':'')+'>'+h(l.nombre)+(l.cuit?' — CUIT '+l.cuit:'')+'</option>';
+    }).join('');
+
+    var inmCards = avail.map(function(p){
+      var selected = CONTRACT_DATA.inmId===p.id;
+      return '<div id="s-'+p.id+'" onclick="selectInm('+p.id+')" style="'+
+        'display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid '+(selected?'var(--gold)':'var(--border)')+';'+
+        'border-radius:var(--radius);cursor:pointer;transition:all .15s;background:'+(selected?'var(--gold-light)':'var(--surface)')+'">' +
+        '<div style="font-size:28px;opacity:.7">'+(p.tipo==='Departamento'?'🏠':p.tipo==='Local comercial'?'🏪':p.tipo==='Oficina'?'🏢':'🏘️')+'</div>' +
+        '<div style="flex:1">' +
+        '<div style="font-weight:500;font-size:14px">'+h(p.dir)+'</div>' +
+        '<div style="font-size:12px;color:var(--text3)">'+h(p.tipo)+' · '+h(p.barrio)+(p.m2?' · '+p.m2+'m²':'')+'</div>' +
+        '</div>' +
+        '<div style="text-align:right">' +
+        (p.precio?'<div style="font-family:var(--serif);font-size:17px;color:var(--accent-dark)">'+fmtPeso(p.precio)+'</div><div style="font-size:11px;color:var(--text3)">por mes</div>':'') +
+        '</div>' +
+        '<div id="chk-'+p.id+'" style="width:22px;height:22px;border-radius:50%;border:2px solid '+(selected?'var(--gold)':'var(--border2)')+';background:'+(selected?'var(--gold)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+        (selected?'<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>':'') +
+        '</div>' +
+        '</div>';
+    }).join('');
+
+    content =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">' +
+
+      // Left: Inmueble
+      '<div>' +
+      '<div class="form-section-title">Inmueble a alquilar</div>' +
+      (avail.length===0?'<p style="color:var(--text3)">No hay inmuebles disponibles.</p>':
+        '<div style="display:flex;flex-direction:column;gap:8px">'+inmCards+'</div>') +
+      '</div>' +
+
+      // Right: Locador
+      '<div>' +
+      '<div class="form-section-title">Locador (propietario)</div>' +
+      '<div class="form-field" style="margin-bottom:16px">' +
+      '<label>Seleccionar locador</label>' +
+      '<select id="loc-sel" onchange="CONTRACT_DATA.locId=parseInt(this.value);fillLocadorFields()">' + locOpts + '</select>' +
+      '</div>' +
+      '<div id="locador-preview" style="background:var(--surface2);border-radius:var(--radius);padding:14px;font-size:13px">' +
+      renderLocadorPreview(CONTRACT_DATA.locId) +
+      '</div>' +
+      '<button class="btn btn-ghost" onclick="openAddLocador()" style="font-size:12px;margin-top:10px;width:100%;justify-content:center;border:1px dashed var(--border2)">+ Agregar nuevo locador</button>' +
+      '</div>' +
+      '</div>' +
+
+      '<div style="margin-top:20px;display:flex;justify-content:flex-end">' +
+      '<button class="btn btn-primary" id="btn-ct-next" onclick="ctNext()"'+(CONTRACT_DATA.inmId?'':' disabled')+'>Continuar →</button>' +
+      '</div>';
+
+  // ── STEP 2: Locatario + Garante ──────────────────────────────────────
   } else if(CONTRACT_STEP===2) {
-    var inm = getInm(CONTRACT_DATA.inmId); var l = CONTRACT_DATA.locatario||{};
-    content = '<div class="highlight-box"><p>Inmueble: <strong>' + h(inm?inm.dir:'') + '</strong> · ' + fmtPeso(inm?inm.precio:0) + '/mes</p></div>' +
-      '<div class="form-section-title">Datos del locatario</div>' +
+    var inm=getInm(CONTRACT_DATA.inmId); var l=CONTRACT_DATA.locatario||{};
+    var loc2=getLoc(CONTRACT_DATA.locId)||getDefaultLoc();
+    var g=CONTRACT_DATA.garante||{};
+
+    // Offer to select existing inquilino
+    var inqOpts = '<option value="">— Nuevo locatario —</option>' +
+      DB.inquilinos.map(function(i){ return '<option value="'+i.id+'">'+h(i.nombre)+(i.dni?' — DNI '+i.dni:'')+'</option>'; }).join('');
+
+    content =
+      '<div class="highlight-box"><p>' +
+      '🏠 <strong>'+h(inm?inm.dir:'')+'</strong>' +
+      ' · 👤 Locador: <strong>'+h(loc2.nombre)+'</strong>' +
+      '</p></div>' +
+
+      '<div class="form-section-title">Locatario</div>' +
+      '<div class="form-field" style="margin-bottom:16px">' +
+      '<label>Seleccionar inquilino existente (opcional)</label>' +
+      '<select id="inq-exist" onchange="prefillLocatario(this.value)">'+inqOpts+'</select>' +
+      '</div>' +
       '<div class="form-grid">' +
-      '<div class="form-field"><label>Nombre completo *</label><input id="loc-n" type="text" value="' + h(l.nombre||'') + '" placeholder="Juan Carlos Pérez"></div>' +
-      '<div class="form-field"><label>DNI *</label><input id="loc-d" type="text" value="' + h(l.dni||'') + '" placeholder="30.123.456"></div>' +
-      '<div class="form-field full"><label>Domicilio real *</label><input id="loc-dom" type="text" value="' + h(l.domicilio||'') + '" placeholder="Av. Rivadavia 1234, CABA"></div>' +
-      '<div class="form-field"><label>Teléfono</label><input id="loc-t" type="text" value="' + h(l.tel||'') + '" placeholder="+54 11 1234-5678"></div>' +
-      '<div class="form-field"><label>Email</label><input id="loc-e" type="email" value="' + h(l.email||'') + '" placeholder="juan@ejemplo.com"></div>' +
-      '<div class="form-field"><label>Estado civil</label><select id="loc-ec"><option>Soltero/a</option><option>Casado/a</option><option>Divorciado/a</option></select></div>' +
-      '<div class="form-field"><label>Ocupación</label><input id="loc-oc" type="text" value="' + h(l.ocupacion||'') + '" placeholder="Empleado en relación de dependencia"></div>' +
-      '</div><div class="form-section-title" style="margin-top:20px">Garante / Fiador solidario</div>' +
+      '<div class="form-field"><label>Nombre completo *</label><input id="loc-n" type="text" value="'+h(l.nombre||'')+'" placeholder="Juan Carlos Pérez"></div>' +
+      '<div class="form-field"><label>DNI / CUIT *</label><input id="loc-d" type="text" value="'+h(l.dni||'')+'" placeholder="30.123.456"></div>' +
+      '<div class="form-field full"><label>Domicilio real *</label><input id="loc-dom" type="text" value="'+h(l.domicilio||'')+'" placeholder="Av. Rivadavia 1234, Esquel"></div>' +
+      '<div class="form-field"><label>Teléfono</label><input id="loc-t" type="text" value="'+h(l.tel||'')+'" placeholder="02945 462624"></div>' +
+      '<div class="form-field"><label>Email</label><input id="loc-e" type="email" value="'+h(l.email||'')+'" placeholder="juan@ejemplo.com"></div>' +
+      '<div class="form-field"><label>Estado civil</label><select id="loc-ec">'+
+      ['Soltero/a','Casado/a','Divorciado/a','Viudo/a','Unión convivencial'].map(function(s){ return '<option'+(l.estadoCivil===s?' selected':'')+'>'+s+'</option>'; }).join('')+
+      '</select></div>' +
+      '<div class="form-field"><label>Ocupación</label><input id="loc-oc" type="text" value="'+h(l.ocupacion||'')+'" placeholder="Empleado en relación de dependencia"></div>' +
+      '</div>' +
+
+      '<div class="form-section-title" style="margin-top:24px">Garante / Fiador solidario</div>' +
       '<div class="form-grid">' +
-      '<div class="form-field"><label>Nombre del garante</label><input id="gar-n" type="text" placeholder="María López"></div>' +
-      '<div class="form-field"><label>DNI del garante</label><input id="gar-d" type="text" placeholder="25.678.901"></div>' +
-      '<div class="form-field full"><label>Domicilio del garante</label><input id="gar-dom" type="text" placeholder="Calle Falsa 123, CABA"></div>' +
-      '</div><div style="margin-top:20px;display:flex;justify-content:space-between"><button class="btn btn-secondary" onclick="ctBack()">← Volver</button><button class="btn btn-primary" onclick="ctNext()">Continuar →</button></div>';
+      '<div class="form-field"><label>Nombre del garante</label><input id="gar-n" type="text" value="'+h(g.nombre||'')+'" placeholder="María López"></div>' +
+      '<div class="form-field"><label>DNI del garante</label><input id="gar-d" type="text" value="'+h(g.dni||'')+'" placeholder="25.678.901"></div>' +
+      '<div class="form-field full"><label>Domicilio del garante</label><input id="gar-dom" type="text" value="'+h(g.domicilio||'')+'" placeholder="Calle Falsa 123, Esquel"></div>' +
+      '<div class="form-field"><label>Teléfono garante</label><input id="gar-t" type="text" value="'+h(g.tel||'')+'" placeholder="02945 999888"></div>' +
+      '<div class="form-field"><label>Email garante</label><input id="gar-e" type="email" value="'+h(g.email||'')+'" placeholder="garante@email.com"></div>' +
+      '</div>' +
+      '<div style="margin-top:20px;display:flex;justify-content:space-between">' +
+      '<button class="btn btn-secondary" onclick="ctBack()">← Volver</button>' +
+      '<button class="btn btn-primary" onclick="ctNext()">Continuar →</button>' +
+      '</div>';
+
+  // ── STEP 3: Condiciones ──────────────────────────────────────────────
   } else if(CONTRACT_STEP===3) {
-    var inm2 = getInm(CONTRACT_DATA.inmId); var c2 = CONTRACT_DATA.condiciones||{};
-    var today = new Date().toISOString().split('T')[0];
-    var end2y = new Date(); end2y.setFullYear(end2y.getFullYear()+2);
-    var endDef = end2y.toISOString().split('T')[0];
-    content = '<div class="highlight-box"><p>Inmueble: <strong>' + h(inm2?inm2.dir:'') + '</strong> · Locatario: <strong>' + h(CONTRACT_DATA.locatario.nombre||'') + '</strong></p></div>' +
+    var inm2=getInm(CONTRACT_DATA.inmId); var c2=CONTRACT_DATA.condiciones||{};
+    var today=new Date().toISOString().split('T')[0];
+    var end2y=new Date(); end2y.setFullYear(end2y.getFullYear()+2);
+    var endDef=end2y.toISOString().split('T')[0];
+
+    content =
+      '<div class="highlight-box"><p>🏠 <strong>'+h(inm2?inm2.dir:'')+'</strong> · 👤 <strong>'+h(CONTRACT_DATA.locatario.nombre||'')+'</strong></p></div>' +
       '<div class="form-section-title">Condiciones del contrato</div>' +
       '<div class="form-grid">' +
-      '<div class="form-field"><label>Fecha de inicio</label><input id="co-ini" type="date" value="' + (c2.inicio||today) + '"></div>' +
-      '<div class="form-field"><label>Fecha de fin</label><input id="co-fin" type="date" value="' + (c2.fin||endDef) + '"></div>' +
-      '<div class="form-field"><label>Alquiler mensual ($)</label><input id="co-monto" type="number" value="' + (c2.monto||inm2.precio||'') + '"></div>' +
-      '<div class="form-field"><label>Depósito (meses)</label><input id="co-dep" type="number" value="' + (c2.deposito||1) + '" min="1" max="3"></div>' +
-      '<div class="form-field"><label>Día de pago</label><input id="co-dia" type="number" value="' + (c2.diaPago||10) + '" min="1" max="28"></div>' +
-      '<div class="form-field"><label>Actualización</label><select id="co-act"><option>ICL (Índice Casa Propia)</option><option>IPC</option><option>ICL + IPC (50/50)</option><option>Pactada entre partes</option></select></div>' +
-      '<div class="form-field full"><label>Destino</label><select id="co-dest"><option>Vivienda familiar</option><option>Uso comercial</option><option>Uso profesional</option></select></div>' +
-      '<div class="form-field full"><label>Cláusulas adicionales</label><textarea id="co-cl" placeholder="Condiciones especiales...">' + h(c2.clausulas||'') + '</textarea></div>' +
-      '</div><div style="margin-top:20px;display:flex;justify-content:space-between"><button class="btn btn-secondary" onclick="ctBack()">← Volver</button><button class="btn btn-primary" onclick="ctNext()">Revisar y generar →</button></div>';
+      '<div class="form-field"><label>Fecha de inicio *</label><input id="co-ini" type="date" value="'+(c2.inicio||today)+'"></div>' +
+      '<div class="form-field"><label>Fecha de fin *</label><input id="co-fin" type="date" value="'+(c2.fin||endDef)+'"></div>' +
+      '<div class="form-field"><label>Alquiler mensual ($) *</label><input id="co-monto" type="number" value="'+(c2.monto||inm2&&inm2.precio||'')+'" placeholder="0"></div>' +
+      '<div class="form-field"><label>Depósito (meses)</label><input id="co-dep" type="number" value="'+(c2.deposito||1)+'" min="1" max="3"></div>' +
+      '<div class="form-field"><label>Día de pago (del mes)</label><input id="co-dia" type="number" value="'+(c2.diaPago||10)+'" min="1" max="28"></div>' +
+      '<div class="form-field"><label>Actualización</label><select id="co-act">'+
+      ['ICL (Índice Casa Propia)','IPC','ICL + IPC (50/50)','Pactada entre partes'].map(function(s){return '<option'+(c2.actualizacion===s?' selected':'')+'>'+s+'</option>';}).join('')+
+      '</select></div>' +
+      '<div class="form-field"><label>Destino</label><select id="co-dest">'+
+      ['Vivienda familiar','Uso comercial','Uso profesional','Actividad de salud','Actividad educativa'].map(function(s){return '<option'+(c2.destino===s?' selected':'')+'>'+s+'</option>';}).join('')+
+      '</select></div>' +
+      '<div class="form-field"><label>Genera cobros automáticos</label><select id="co-autocob">'+
+      '<option value="si">Sí — crear cobros mensuales</option>'+
+      '<option value="no">No</option>'+
+      '</select></div>' +
+      '<div class="form-field full"><label>Cláusulas adicionales</label>' +
+      '<textarea id="co-cl" placeholder="Condiciones especiales...">'+h(c2.clausulas||'')+'</textarea></div>' +
+      '</div>' +
+      '<div style="margin-top:20px;display:flex;justify-content:space-between">' +
+      '<button class="btn btn-secondary" onclick="ctBack()">← Volver</button>' +
+      '<button class="btn btn-primary" onclick="ctNext()">Revisar y generar →</button>' +
+      '</div>';
+
+  // ── STEP 4: Preview + Generate ───────────────────────────────────────
   } else if(CONTRACT_STEP===4) {
-    var inm3 = getInm(CONTRACT_DATA.inmId); var loc3 = CONTRACT_DATA.locatario; var con3 = CONTRACT_DATA.condiciones||{};
-    var pairs = [['Inmueble',inm3?inm3.dir:'—'],['Locatario',loc3.nombre||'—'],['DNI',loc3.dni||'—'],['Período',(con3.inicio||'—')+' al '+(con3.fin||'—')],['Alquiler mensual',fmtPeso(con3.monto||0)],['Depósito',(con3.deposito||1)+' mes(es)'],['Día de pago','Hasta el día '+(con3.diaPago||10)],['Actualización',con3.actualizacion||'ICL']];
-    content = '<div class="form-section-title">Resumen del contrato</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">' +
-      pairs.map(function(pair){ return '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px"><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">' + pair[0] + '</div><div style="font-size:13px;font-weight:500">' + h(String(pair[1])) + '</div></div>'; }).join('') + '</div>' +
-      '<div style="background:var(--green-light);border:1px solid #6EC48A;border-radius:var(--radius);padding:14px;margin-bottom:20px"><p style="font-size:13px;color:var(--green)">✓ Todo listo. Hacé clic en <strong>Generar contrato .docx</strong> para descargarlo.</p></div>' +
-      '<div style="display:flex;justify-content:space-between"><button class="btn btn-secondary" onclick="ctBack()">← Volver</button>' +
-      '<button class="btn btn-green" id="btn-gen" onclick="generateDocx()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Generar contrato .docx</button></div>';
+    var inm3=getInm(CONTRACT_DATA.inmId);
+    var loc3=CONTRACT_DATA.locatario;
+    var loc4=getLoc(CONTRACT_DATA.locId)||getDefaultLoc();
+    var con3=CONTRACT_DATA.condiciones||{};
+    var gar3=CONTRACT_DATA.garante||{};
+
+    var pairs = [
+      ['Locador',loc4.nombre||'—'],
+      ['Inmueble',inm3?inm3.dir:'—'],
+      ['Locatario',loc3.nombre||'—'],
+      ['DNI Locatario',loc3.dni||'—'],
+      ['Garante',gar3.nombre||'Sin garante'],
+      ['Inicio',con3.inicio||'—'],
+      ['Fin',con3.fin||'—'],
+      ['Alquiler mensual',fmtPeso(con3.monto||0)],
+      ['Depósito',(con3.deposito||1)+' mes/es'],
+      ['Día de pago','Hasta el día '+(con3.diaPago||10)],
+      ['Actualización',con3.actualizacion||'ICL'],
+      ['Destino',con3.destino||'—'],
+    ];
+
+    content =
+      '<div class="form-section-title">Resumen del contrato</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">' +
+      pairs.map(function(pair){
+        return '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px">' +
+          '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">'+pair[0]+'</div>' +
+          '<div style="font-size:13px;font-weight:500">'+h(String(pair[1]))+'</div></div>';
+      }).join('') +
+      '</div>' +
+      '<div style="background:var(--green-light);border:1px solid #6EC48A;border-radius:var(--radius);padding:14px;margin-bottom:20px">' +
+      '<p style="font-size:13px;color:var(--green)">✓ Todo listo. Hacé clic en <strong>Generar contrato</strong> para descargarlo.</p></div>' +
+      '<div style="display:flex;justify-content:space-between">' +
+      '<button class="btn btn-secondary" onclick="ctBack()">← Volver</button>' +
+      '<button class="btn btn-green" id="btn-gen" onclick="generateDocx()">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+      'Generar contrato .docx</button></div>';
   }
 
-  el.innerHTML = '<div style="max-width:760px;margin:0 auto" class="fade-in">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px"><button class="btn btn-ghost" onclick="pgContratos(document.getElementById(\'main\'))">← Volver</button><div style="font-size:13px;color:var(--text3)">Paso ' + CONTRACT_STEP + ' de 4</div></div>' +
-    '<div class="step-indicator">' + stepHTML + '</div>' +
-    '<div class="card">' + content + '</div></div>';
+  el.innerHTML =
+    '<div style="max-width:820px;margin:0 auto" class="fade-in">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">' +
+    '<button class="btn btn-ghost" onclick="pgContratos(document.getElementById(&apos;main&apos;))">&#8592; Volver a contratos</button>' +
+    '<div style="font-size:13px;color:var(--text3)">Paso '+CONTRACT_STEP+' de 4</div></div>' +
+    '<div class="step-indicator">'+stepHTML+'</div>' +
+    '<div class="card">'+content+'</div></div>';
+}
+
+function renderLocadorPreview(locId) {
+  var loc = getLoc(locId) || getDefaultLoc();
+  if(!loc) return '<p style="color:var(--text3)">Sin locador seleccionado</p>';
+  return '<div style="display:flex;flex-direction:column;gap:6px">' +
+    '<div style="font-weight:600;font-size:14px">'+h(loc.nombre)+'</div>' +
+    (loc.cuit?'<div style="font-size:12px;color:var(--text3)">CUIT: '+h(loc.cuit)+'</div>':'') +
+    (loc.domicilio?'<div style="font-size:12px;color:var(--text3)">'+h(loc.domicilio)+'</div>':'') +
+    (loc.tel?'<div style="font-size:12px;color:var(--text3)">Tel: '+h(loc.tel)+'</div>':'') +
+    (loc.email?'<div style="font-size:12px;color:var(--text3)">'+h(loc.email)+'</div>':'') +
+    '</div>';
+}
+
+function fillLocadorFields() {
+  var sel = document.getElementById('loc-sel');
+  if(!sel) return;
+  var locId = parseInt(sel.value);
+  CONTRACT_DATA.locId = locId;
+  var prev = document.getElementById('locador-preview');
+  if(prev) prev.innerHTML = renderLocadorPreview(locId);
+}
+
+function prefillLocatario(inqId) {
+  if(!inqId) return;
+  var inq = getInq(parseInt(inqId));
+  if(!inq) return;
+  var fields = {
+    'loc-n': inq.nombre||'', 'loc-d': inq.dni||'',
+    'loc-dom': inq.domicilio||'', 'loc-t': inq.tel||'',
+    'loc-e': inq.email||''
+  };
+  Object.keys(fields).forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.value = fields[id];
+  });
 }
 
 function selectInm(id) {
   CONTRACT_DATA.inmId = id;
-  document.querySelectorAll('[id^="s-"]').forEach(function(el){ el.style.borderColor=''; el.style.background=''; });
-  document.querySelectorAll('[id^="chk-"]').forEach(function(el){ el.style.background=''; el.style.borderColor='var(--border2)'; el.innerHTML=''; });
-  var sel = document.getElementById('s-'+id); var chk = document.getElementById('chk-'+id);
-  if(sel){ sel.style.borderColor='var(--accent)'; sel.style.background='var(--accent-light)'; }
-  if(chk){ chk.style.background='var(--accent)'; chk.style.borderColor='var(--accent)'; chk.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>'; }
-  var btn = document.getElementById('btn-ct-next'); if(btn) btn.disabled = false;
+  // Update all cards visually
+  DB.inmuebles.forEach(function(p){
+    var card = document.getElementById('s-'+p.id);
+    var chk  = document.getElementById('chk-'+p.id);
+    var sel  = (p.id === id);
+    if(card) {
+      card.style.borderColor = sel ? 'var(--gold)' : 'var(--border)';
+      card.style.background  = sel ? 'var(--gold-light)' : 'var(--surface)';
+    }
+    if(chk) {
+      chk.style.background   = sel ? 'var(--gold)' : 'transparent';
+      chk.style.borderColor  = sel ? 'var(--gold)' : 'var(--border2)';
+      chk.innerHTML = sel ? '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>' : '';
+    }
+  });
+  var btn = document.getElementById('btn-ct-next');
+  if(btn) btn.disabled = false;
 }
 
 function ctNext() {
-  if(CONTRACT_STEP===1 && !CONTRACT_DATA.inmId){ toast('Seleccioná un inmueble','error'); return; }
+  if(CONTRACT_STEP===1) {
+    if(!CONTRACT_DATA.inmId){ toast('Seleccioná un inmueble','error'); return; }
+    var locSel = document.getElementById('loc-sel');
+    if(locSel) CONTRACT_DATA.locId = parseInt(locSel.value);
+  }
   if(CONTRACT_STEP===2) {
-    var n = document.getElementById('loc-n').value.trim(); var d = document.getElementById('loc-d').value.trim();
-    if(!n||!d){ toast('Completá nombre y DNI','error'); return; }
-    CONTRACT_DATA.locatario = {nombre:n,dni:d,domicilio:document.getElementById('loc-dom').value,tel:document.getElementById('loc-t').value,email:document.getElementById('loc-e').value,estadoCivil:document.getElementById('loc-ec').value,ocupacion:document.getElementById('loc-oc').value};
-    CONTRACT_DATA.garante = {nombre:document.getElementById('gar-n').value,dni:document.getElementById('gar-d').value,domicilio:document.getElementById('gar-dom').value};
+    var n=document.getElementById('loc-n').value.trim();
+    var d=document.getElementById('loc-d').value.trim();
+    if(!n||!d){ toast('Completá nombre y DNI del locatario','error'); return; }
+    CONTRACT_DATA.locatario = {
+      nombre:n, dni:d,
+      domicilio:document.getElementById('loc-dom').value,
+      tel:document.getElementById('loc-t').value,
+      email:document.getElementById('loc-e').value,
+      estadoCivil:document.getElementById('loc-ec').value,
+      ocupacion:document.getElementById('loc-oc').value
+    };
+    CONTRACT_DATA.garante = {
+      nombre:document.getElementById('gar-n').value,
+      dni:document.getElementById('gar-d').value,
+      domicilio:document.getElementById('gar-dom').value,
+      tel:document.getElementById('gar-t').value,
+      email:document.getElementById('gar-e').value
+    };
+    // Save or update inquilino
+    var existInq = DB.inquilinos.find(function(i){ return i.dni===CONTRACT_DATA.locatario.dni; });
+    if(!existInq) {
+      var newInqId = DB.inquilinos.length ? Math.max.apply(null,DB.inquilinos.map(function(i){return i.id;})) + 1 : 1;
+      DB.inquilinos.push({
+        id:newInqId, nombre:n, dni:d,
+        tel:CONTRACT_DATA.locatario.tel,
+        email:CONTRACT_DATA.locatario.email,
+        domicilio:CONTRACT_DATA.locatario.domicilio,
+        estadoCivil:CONTRACT_DATA.locatario.estadoCivil,
+        ocupacion:CONTRACT_DATA.locatario.ocupacion,
+        inmId:CONTRACT_DATA.inmId, estado:'activo',
+        comprobantes:[], contrato_generado:[]
+      });
+      CONTRACT_DATA._newInqId = newInqId;
+    } else {
+      CONTRACT_DATA._newInqId = existInq.id;
+    }
   }
   if(CONTRACT_STEP===3) {
-    CONTRACT_DATA.condiciones = {inicio:document.getElementById('co-ini').value,fin:document.getElementById('co-fin').value,monto:document.getElementById('co-monto').value,deposito:document.getElementById('co-dep').value,diaPago:document.getElementById('co-dia').value,actualizacion:document.getElementById('co-act').value,destino:document.getElementById('co-dest').value,clausulas:document.getElementById('co-cl').value};
+    var ini=document.getElementById('co-ini').value;
+    var fin=document.getElementById('co-fin').value;
+    var monto=parseInt(document.getElementById('co-monto').value)||0;
+    if(!ini||!fin||!monto){ toast('Completá inicio, fin y monto','error'); return; }
+    CONTRACT_DATA.condiciones = {
+      inicio:ini, fin:fin, monto:monto,
+      deposito:document.getElementById('co-dep').value,
+      diaPago:document.getElementById('co-dia').value,
+      actualizacion:document.getElementById('co-act').value,
+      destino:document.getElementById('co-dest').value,
+      autoCobros:document.getElementById('co-autocob').value,
+      clausulas:document.getElementById('co-cl').value
+    };
   }
   CONTRACT_STEP = Math.min(4, CONTRACT_STEP+1);
   renderWizard();
 }
 
 function ctBack() { CONTRACT_STEP = Math.max(1, CONTRACT_STEP-1); renderWizard(); }
+
+// ── LOCADORES PAGE ───────────────────────────────────────────────────────────
+function pgLocadores(el) {
+  var rows = (DB.locadores||[]).map(function(l){
+    return '<tr>' +
+      '<td style="font-weight:500">'+h(l.nombre)+'</td>' +
+      '<td style="font-size:12px;color:var(--text3)">'+h(l.cuit||'—')+'</td>' +
+      '<td style="font-size:12px">'+h(l.domicilio||'—')+'</td>' +
+      '<td style="font-size:12px">'+h(l.tel||'—')+'</td>' +
+      '<td style="font-size:12px">'+h(l.email||'—')+'</td>' +
+      '<td>'+(l.default?'<span class="badge badge-green">Principal</span>':'')+'</td>' +
+      '<td><button class="btn btn-ghost" style="font-size:12px" onclick="openEditLocador('+l.id+')">✏️ Editar</button></td>' +
+      '</tr>';
+  }).join('');
+
+  el.innerHTML =
+    '<div class="page-header">' +
+    '<div><div class="page-title">Locadores</div>' +
+    '<div class="page-subtitle">Propietarios que figuran como locadores en los contratos</div></div>' +
+    '<button class="btn btn-primary" onclick="openAddLocador()">+ Nuevo locador</button>' +
+    '</div>' +
+    '<div class="page-content fade-in">' +
+    '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Nombre</th><th>CUIT</th><th>Domicilio</th><th>Teléfono</th><th>Email</th><th>Rol</th><th></th>' +
+    '</tr></thead><tbody>'+rows+'</tbody></table></div>' +
+    '</div>';
+}
+
+function openAddLocador(prefillNombre) {
+  var bodyEl = document.createElement('div');
+  bodyEl.className = 'form-grid';
+  bodyEl.innerHTML =
+    '<div class="form-field full"><label>Nombre completo / Razón social *</label>' +
+    '<input id="nl-nombre" type="text" value="'+(prefillNombre?h(prefillNombre):'')+'" placeholder="Carolina Gerosa / Gerosa SRL"></div>' +
+    '<div class="form-field"><label>CUIT / DNI</label>' +
+    '<input id="nl-cuit" type="text" placeholder="27-XXXXXXXXX-X"></div>' +
+    '<div class="form-field"><label>Teléfono</label>' +
+    '<input id="nl-tel" type="text" placeholder="02945 462624"></div>' +
+    '<div class="form-field full"><label>Domicilio</label>' +
+    '<input id="nl-dom" type="text" placeholder="25 de Mayo 498, Esquel"></div>' +
+    '<div class="form-field full"><label>Email</label>' +
+    '<input id="nl-email" type="email" placeholder="correo@dominio.com"></div>' +
+    '<div class="form-field full"><label>CBU / Alias bancario</label>' +
+    '<input id="nl-cbu" type="text" placeholder="Para cobros por transferencia"></div>' +
+    '<div class="form-field full"><label style="display:flex;align-items:center;gap:8px">' +
+    '<input id="nl-default" type="checkbox"> Establecer como locador principal</label></div>';
+
+  var footer = modalFooter([{
+    label: 'Guardar locador', cls: 'btn-green',
+    action: function() {
+      var nombre = document.getElementById('nl-nombre').value.trim();
+      if(!nombre){ toast('Ingresá el nombre','error'); return; }
+      var isDefault = document.getElementById('nl-default').checked;
+      if(isDefault) DB.locadores.forEach(function(l){ l.default=false; });
+      var newId = DB.locadores.length ? Math.max.apply(null,DB.locadores.map(function(l){return l.id;})) + 1 : 1;
+      DB.locadores.push({
+        id:newId, nombre:nombre,
+        cuit: document.getElementById('nl-cuit').value.trim(),
+        tel:  document.getElementById('nl-tel').value.trim(),
+        domicilio: document.getElementById('nl-dom').value.trim(),
+        email: document.getElementById('nl-email').value.trim(),
+        cbu:  document.getElementById('nl-cbu').value.trim(),
+        default: isDefault
+      });
+      saveDB();
+      closeModal();
+      toast('Locador guardado','success');
+      if(PAGE==='locadores') nav('locadores');
+    }
+  }]);
+  openModal('Nuevo locador', bodyEl, false, footer);
+}
+
+function openEditLocador(id) {
+  var l = getLoc(id); if(!l) return;
+  var bodyEl = document.createElement('div');
+  bodyEl.className = 'form-grid';
+  bodyEl.innerHTML =
+    '<div class="form-field full"><label>Nombre completo / Razón social *</label>' +
+    '<input id="el-nombre" type="text" value="'+h(l.nombre||'')+'"></div>' +
+    '<div class="form-field"><label>CUIT / DNI</label>' +
+    '<input id="el-cuit" type="text" value="'+h(l.cuit||'')+'"></div>' +
+    '<div class="form-field"><label>Teléfono</label>' +
+    '<input id="el-tel" type="text" value="'+h(l.tel||'')+'"></div>' +
+    '<div class="form-field full"><label>Domicilio</label>' +
+    '<input id="el-dom" type="text" value="'+h(l.domicilio||'')+'"></div>' +
+    '<div class="form-field full"><label>Email</label>' +
+    '<input id="el-email" type="email" value="'+h(l.email||'')+'"></div>' +
+    '<div class="form-field full"><label>CBU / Alias</label>' +
+    '<input id="el-cbu" type="text" value="'+h(l.cbu||'')+'"></div>' +
+    '<div class="form-field full"><label style="display:flex;align-items:center;gap:8px">' +
+    '<input id="el-default" type="checkbox"'+(l.default?' checked':'')+'>Locador principal</label></div>';
+
+  var footer = modalFooter([{
+    label: 'Guardar cambios', cls: 'btn-green',
+    action: function() {
+      var nombre = document.getElementById('el-nombre').value.trim();
+      if(!nombre){ toast('Ingresá el nombre','error'); return; }
+      var isDefault = document.getElementById('el-default').checked;
+      if(isDefault) DB.locadores.forEach(function(x){ x.default=false; });
+      l.nombre = nombre;
+      l.cuit   = document.getElementById('el-cuit').value.trim();
+      l.tel    = document.getElementById('el-tel').value.trim();
+      l.domicilio = document.getElementById('el-dom').value.trim();
+      l.email  = document.getElementById('el-email').value.trim();
+      l.cbu    = document.getElementById('el-cbu').value.trim();
+      l.default = isDefault;
+      saveDB(); closeModal(); nav('locadores');
+      toast('Locador actualizado','success');
+    }
+  }]);
+  openModal('Editar locador — ' + l.nombre, bodyEl, false, footer);
+}
+
+
+async function generateDocx() {
+  var btn = document.getElementById('btn-gen');
+  if(btn){btn.disabled=true;btn.textContent='Generando...';}
+  try {
+    var inm = getInm(CONTRACT_DATA.inmId);
+    var loc = CONTRACT_DATA.locatario||{};
+    var con = CONTRACT_DATA.condiciones||{};
+    var gar = CONTRACT_DATA.garante||{};
+    var locador = getLoc(CONTRACT_DATA.locId)||getDefaultLoc();
+
+    var hoy = new Date();
+    var meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+    function fmtDateES(str) {
+      if(!str) return '';
+      var d = new Date(str+'T00:00:00');
+      return d.getDate() + ' de ' + meses[d.getMonth()] + ' de ' + d.getFullYear();
+    }
+
+    var monto = parseInt(con.monto)||0;
+    var dep = parseInt(con.deposito)||1;
+    var durMeses = con.inicio && con.fin ? (function(){
+      var d1=new Date(con.inicio+'T00:00:00'), d2=new Date(con.fin+'T00:00:00');
+      var m=(d2.getFullYear()-d1.getFullYear())*12+(d2.getMonth()-d1.getMonth());
+      return m===24?'dos (2) años':m===36?'tres (3) años':m===12?'doce (12) meses':m+' meses';
+    })() : 'dos (2) años';
+
+    var actMap = {
+      'ICL (Índice Casa Propia)': 'conforme al Índice para Contratos de Locación (ICL) publicado por el BCRA, con periodicidad trimestral',
+      'IPC': 'conforme al Índice de Precios al Consumidor (IPC) publicado por el INDEC, con periodicidad trimestral',
+      'ICL + IPC (50/50)': 'conforme al índice compuesto en partes iguales por el ICL (BCRA) y el IPC (INDEC), con periodicidad trimestral',
+      'Pactada entre partes': con.actualizacionTexto || 'conforme a lo pactado entre las partes por escrito'
+    };
+    var actTexto = actMap[con.actualizacion] || actMap['ICL (Índice Casa Propia)'];
+
+    var d = {
+      ciudad: inm && inm.ciudad ? inm.ciudad : 'Esquel',
+      provincia: inm && inm.provincia ? inm.provincia : 'Chubut',
+      fechaDia: String(hoy.getDate()),
+      fechaMes: meses[hoy.getMonth()],
+      fechaAnio: String(hoy.getFullYear()),
+      locadorNombre: locador.nombre || 'Carolina Gerosa',
+      locadorCuit: locador.cuit || '—',
+      locadorDomicilio: locador.domicilio || '25 de Mayo 498, Esquel',
+      locadorTel: locador.tel || '02945 462624',
+      locadorEmail: locador.email ? locador.email.split('@')[1]||locador.email : 'laboratoriogerosa.com.ar',
+      locNombre: loc.nombre||'',
+      locDni: loc.dni||'',
+      locDomicilio: loc.domicilio||'',
+      locTel: loc.tel||'',
+      locEmail: loc.email||'',
+      garNombre: gar.nombre||'NO INTERVIENE GARANTE',
+      garDni: gar.dni||'—',
+      garDomicilio: gar.domicilio||'—',
+      garTel: gar.tel||'—',
+      garEmail: gar.email||'—',
+      inmDir: inm ? inm.dir : '',
+      inmTipo: inm ? inm.tipo : '',
+      inmM2: inm && inm.m2 ? inm.m2 + ' m²' : 's/d',
+      destino: con.destino||'actividad comercial',
+      duracion: durMeses,
+      fechaInicio: fmtDateES(con.inicio),
+      fechaFin: fmtDateES(con.fin),
+      montoLetras: n2w(monto).toUpperCase() + ' PESOS',
+      montoNum: monto.toLocaleString('es-AR'),
+      diaPago: con.diaPago||'10',
+      actualizacion: actTexto,
+      deposito: String(dep),
+      depLetras: n2w(monto * dep).toUpperCase() + ' PESOS',
+      depNum: (monto * dep).toLocaleString('es-AR')
+    };
+
+    var D = docx;
+    var j = D.AlignmentType.JUSTIFIED;
+    var c = D.AlignmentType.CENTER;
+
+    function p(txt, opts) {
+      opts = opts||{};
+      return new D.Paragraph({
+        alignment: opts.align||j,
+        spacing: {before:opts.before||80, after:opts.after||80},
+        children: [new D.TextRun({text:String(txt||''), size:opts.size||22, font:'Arial', bold:opts.bold||false, color:opts.color||undefined})]
+      });
+    }
+    function mixed(runs, opts) {
+      opts = opts||{};
+      return new D.Paragraph({
+        alignment: opts.align||j,
+        spacing: {before:opts.before||200, after:80},
+        children: runs
+      });
+    }
+    function r(txt, opts) {
+      opts = opts||{};
+      return new D.TextRun({text:String(txt||''), size:opts.size||22, font:'Arial', bold:opts.bold||false});
+    }
+    function sigLines(label, name, sub) {
+      return [
+        new D.Paragraph({ alignment:c, spacing:{before:700,after:40},
+          border:{top:{style:D.BorderStyle.SINGLE,size:6,color:'000000',space:6}},
+          children:[r(label,{size:20})] }),
+        new D.Paragraph({ alignment:c, spacing:{before:0,after:0}, children:[r(name,{size:20})] }),
+        new D.Paragraph({ alignment:c, spacing:{before:0,after:160}, children:[r(sub,{size:18,color:'777777'})] })
+      ];
+    }
+
+    var children = [
+      p('CONTRATO DE LOCACIÓN', {align:c,bold:true,size:28,before:0}),
+      p(' ', {before:100,after:0}),
+      p('En la ciudad de '+d.ciudad+', Provincia de '+d.provincia+', República Argentina, a los '+d.fechaDia+' días del mes de '+d.fechaMes+' de '+d.fechaAnio+', entre las partes que se describen a continuación se celebra el presente Contrato de Locación, sujeto a las disposiciones del Código Civil y Comercial de la Nación Argentina y la Ley N° 27.737:'),
+      p(' ',{before:100,after:0}),
+      p('PARTES INTERVINIENTES',{align:c,bold:true,size:24,before:80}),
+      mixed([r('EL LOCADOR: ',{bold:true}), r(d.locadorNombre+', CUIT '+d.locadorCuit+', con domicilio en '+d.locadorDomicilio+', teléfono '+d.locadorTel+', en adelante "EL LOCADOR".')], {before:160}),
+      mixed([r('EL LOCATARIO: ',{bold:true}), r(d.locNombre+', DNI N° '+d.locDni+', con domicilio actual en '+d.locDomicilio+', teléfono '+d.locTel+', correo electrónico '+d.locEmail+', en adelante "EL LOCATARIO".')]),
+      mixed([r('GARANTE/FIADOR: ',{bold:true}), r(d.garNombre+', DNI N° '+d.garDni+', con domicilio en '+d.garDomicilio+', teléfono '+d.garTel+', correo '+d.garEmail+', quien se constituye en fiador solidario, liso, llano y principal pagador de todas las obligaciones emergentes del presente contrato.')]),
+      p(' ',{before:80,after:0}),
+      p('CLÁUSULAS',{align:c,bold:true,size:24,before:80}),
+      mixed([r('PRIMERA. OBJETO: ',{bold:true}), r('EL LOCADOR da en locación a EL LOCATARIO el inmueble ubicado en '+d.inmDir+', de la ciudad de '+d.ciudad+', Provincia de '+d.provincia+', individualizado como '+d.inmTipo+', superficie aproximada: '+d.inmM2+'. Con todos sus servicios funcionando y en buen estado de habitabilidad.')],{before:200}),
+      mixed([r('SEGUNDA. DESTINO: ',{bold:true}), r('El inmueble será destinado exclusivamente a '+d.destino+'. Queda prohibido darle un destino distinto sin autorización previa y escrita de EL LOCADOR. EL LOCATARIO no podrá ceder, subarrendar ni transferir el presente contrato bajo apercibimiento de rescisión.')]),
+      mixed([r('TERCERA. PLAZO: ',{bold:true}), r('La locación tendrá una duración de '+d.duracion+', comenzando el día '+d.fechaInicio+' y finalizando el día '+d.fechaFin+', sin necesidad de interpelación alguna.')]),
+      mixed([r('CUARTA. PRECIO Y FORMA DE PAGO: ',{bold:true}), r('El canon locativo inicial se fija en la suma de '+d.montoLetras+' ($'+d.montoNum+'), pagadero en Pesos Argentinos, por mes adelantado, del día 1 al día '+d.diaPago+' de cada mes, mediante transferencia bancaria'+(locador.cbu?' al CBU/Alias: '+locador.cbu+' a nombre de '+locador.nombre:' a la cuenta que EL LOCADOR indique')+'.')]),
+      mixed([r('QUINTA. ACTUALIZACIÓN DEL CANON: ',{bold:true}), r('Las partes acuerdan que el canon locativo se actualizará '+d.actualizacion+'. Si el índice pactado dejara de publicarse, las partes deberán acordar por escrito un reemplazo razonable dentro de los 30 días.')]),
+      mixed([r('SEXTA. DEPÓSITO EN GARANTÍA: ',{bold:true}), r('EL LOCATARIO entrega en este acto la suma de '+d.depLetras+' ($'+d.depNum+') en concepto de depósito en garantía, equivalente a '+d.deposito+' mes/es de alquiler. Su devolución procederá dentro de los 30 días de restituido el inmueble, previa verificación del estado de conservación.')]),
+      mixed([r('SÉPTIMA. ENTREGA Y ESTADO: ',{bold:true}), r('EL LOCATARIO declara recibir el inmueble en buen estado de conservación y funcionamiento. Toda observación inicial deberá asentarse en el acta de entrega dentro de los 5 días desde la toma de posesión.')]),
+      mixed([r('OCTAVA. OBLIGACIONES DEL LOCATARIO: ',{bold:true}), r('a) Abonar puntualmente el alquiler; b) conservar el inmueble con diligencia; c) informar desperfectos relevantes; d) no alterar el destino; e) permitir inspecciones con 48hs de aviso; f) restituir el inmueble al vencimiento en las mismas condiciones, salvo desgaste normal.')]),
+      mixed([r('NOVENA. OBLIGACIONES DEL LOCADOR: ',{bold:true}), r('a) Entregar el inmueble en condiciones aptas para el uso convenido; b) garantizar el goce pacífico durante la vigencia; c) asumir las reparaciones estructurales que legalmente le correspondan.')]),
+      mixed([r('DÉCIMA. SERVICIOS E IMPUESTOS: ',{bold:true}), r('Queda a cargo de EL LOCATARIO el pago de energía eléctrica, gas, agua, internet y todo servicio vinculado al uso del inmueble. Los impuestos que graven la propiedad quedan a cargo de EL LOCADOR.')]),
+      mixed([r('DÉCIMA PRIMERA. RESCISIÓN ANTICIPADA: ',{bold:true}), r('EL LOCATARIO podrá resolver anticipadamente el contrato transcurridos seis (6) meses de vigencia, debiendo notificar con 30 días de anticipación. Abonará una indemnización de un mes y medio de alquiler si ocurre en el primer año, o un mes en períodos posteriores.')]),
+      mixed([r('DÉCIMA SEGUNDA. MORA: ',{bold:true}), r('La mora se producirá de pleno derecho por el solo vencimiento de los plazos. El incumplimiento grave facultará a la parte cumplidora a intimar su cese dentro de los 15 días y, de persistir, a resolver el contrato con daños y perjuicios.')]),
+      mixed([r('DÉCIMA TERCERA. RESTITUCIÓN: ',{bold:true}), r('Al finalizar la locación, EL LOCATARIO restituirá el inmueble libre de ocupantes, con todas las llaves y accesorios, en el estado pactado.')]),
+      mixed([r('DÉCIMA CUARTA. JURISDICCIÓN: ',{bold:true}), r('Las partes se someten a los Tribunales Ordinarios de la ciudad de '+d.ciudad+', Provincia de '+d.provincia+'.')]),
+      p(' ',{before:80,after:0}),
+      p('EN PRUEBA DE CONFORMIDAD, las partes firman el presente contrato en tres (3) ejemplares de igual tenor y a un solo efecto, en el lugar y fecha indicados en el encabezamiento.'),
+      p(' ',{before:80,after:0}),
+    ];
+    sigLines('EL LOCADOR', d.locadorNombre, 'CUIT: '+d.locadorCuit).forEach(function(x){children.push(x);});
+    sigLines('EL LOCATARIO', d.locNombre, 'DNI: '+d.locDni).forEach(function(x){children.push(x);});
+    sigLines('EL GARANTE / FIADOR', d.garNombre, 'DNI: '+d.garDni).forEach(function(x){children.push(x);});
+
+    var doc = new D.Document({
+      styles:{default:{document:{run:{font:'Arial',size:22}}}},
+      sections:[{
+        properties:{page:{size:{width:12240,height:15840},margin:{top:1440,right:1260,bottom:1440,left:1440}}},
+        children:children
+      }]
+    });
+
+    var buf = await D.Packer.toBlob(doc);
+    var url = URL.createObjectURL(buf);
+    var a = document.createElement('a');
+    a.href = url;
+    var safeName = (loc.nombre||'locatario').replace(/[^a-zA-Z0-9]/g,'_');
+    a.download = 'Contrato_'+safeName+'_'+(con.inicio||'fecha')+'.docx';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+
+    // ── Save contract to DB ──────────────────────────────────────────────
+    if(loc.nombre) {
+      var newCtId = DB.contratos.length ? Math.max.apply(null, DB.contratos.map(function(c){return c.id;})) + 1 : 1;
+      var newCtNum = 'C-'+new Date().getFullYear()+'-'+String(DB.contratos.length+1).padStart(3,'0');
+
+      // Find or create inquilino
+      var existInq = DB.inquilinos.find(function(i){ return i.dni===loc.dni; });
+      var inqId;
+      if(!existInq) {
+        inqId = DB.inquilinos.length ? Math.max.apply(null, DB.inquilinos.map(function(i){return i.id;})) + 1 : 1;
+        DB.inquilinos.push({id:inqId,nombre:loc.nombre,dni:loc.dni,tel:loc.tel||'',email:loc.email||'',domicilio:loc.domicilio||'',inmId:CONTRACT_DATA.inmId,contrato:newCtNum,estado:'activo',comprobantes:[],contrato_generado:[]});
+      } else { inqId = existInq.id; existInq.inmId=CONTRACT_DATA.inmId; existInq.contrato=newCtNum; existInq.estado='activo'; }
+
+      // Mark inmueble as alquilado
+      var inmObj = getInm(CONTRACT_DATA.inmId);
+      if(inmObj) inmObj.estado = 'alquilado';
+
+      // Save contract
+      DB.contratos.push({id:newCtId,num:newCtNum,inmId:CONTRACT_DATA.inmId,inqId:inqId,locId:CONTRACT_DATA.locId||null,inicio:con.inicio,fin:con.fin,monto:monto,estado:'vigente'});
+
+      // Auto-generate monthly cobros
+      if(CONTRACT_DATA.condiciones.autoCobros === 'si' && con.inicio && con.fin && monto) {
+        var dIni=new Date(con.inicio+'T00:00:00'), dFin=new Date(con.fin+'T00:00:00');
+        var mArr=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        var cur=new Date(dIni.getFullYear(),dIni.getMonth(),1);
+        var cobId=DB.cobros.length?Math.max.apply(null,DB.cobros.map(function(c){return c.id;}))+1:1;
+        while(cur<=dFin){
+          var dia=parseInt(con.diaPago)||10;
+          var vDate=new Date(cur.getFullYear(),cur.getMonth(),dia);
+          DB.cobros.push({id:cobId++,ctId:newCtId,mes:mArr[cur.getMonth()]+' '+cur.getFullYear(),monto:monto,estado:'pendiente',vence:vDate.toISOString().split('T')[0],fechaEmision:new Date().toLocaleDateString('es-AR')});
+          cur.setMonth(cur.getMonth()+1);
+        }
+      }
+
+      // Save generated contract to inquilino's file
+      var inqRef = DB.inquilinos.find(function(x){return x.id===inqId;});
+      if(inqRef) {
+        var blobReader = new FileReader();
+        blobReader.onload = function(ev) {
+          if(!inqRef.contrato_generado) inqRef.contrato_generado = [];
+          inqRef.contrato_generado.push({
+            name:'Contrato_'+safeName+'_'+(con.inicio||'fecha')+'.docx',
+            type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            data:ev.target.result,
+            fecha:new Date().toLocaleDateString('es-AR'),
+            version:newCtNum, firmado:false
+          });
+          saveDB();
+        };
+        blobReader.readAsDataURL(buf);
+      }
+      saveDB();
+    }
+
+    toast('✓ Contrato generado y descargado','success');
+    setTimeout(function(){ pgContratos(document.getElementById('main')); }, 800);
+
+  } catch(err) {
+    console.error('Error generando contrato:', err);
+    toast('Error: '+(err.message||String(err)),'error');
+  }
+  if(btn){btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Generar de nuevo';}
+}
+
+async function regenContract(ctId) {
+  var ct = getCt(ctId); if(!ct) { toast('Contrato no encontrado','error'); return; }
+  var inq = getInq(ct.inqId); var inm = getInm(ct.inmId);
+  if(!inq || !inm) { toast('Faltan datos del contrato','error'); return; }
+  // Rebuild CONTRACT_DATA and regenerate
+  CONTRACT_DATA = {
+    inmId: ct.inmId,
+    locId: ct.locId || null,
+    locatario: {nombre:inq.nombre,dni:inq.dni,tel:inq.tel,email:inq.email,domicilio:inq.domicilio},
+    garante: {},
+    condiciones: {inicio:ct.inicio,fin:ct.fin,monto:ct.monto,deposito:1,diaPago:10,actualizacion:'ICL (Índice Casa Propia)',destino:'uso locado',autoCobros:'no'}
+  };
+  await generateDocx();
+}
+
 
 function n2w(n) {
   if(isNaN(n)||n===0) return 'CERO';

@@ -1566,10 +1566,13 @@ function renderInqPage(el) {
       {label:'Deuda total',val:fmtPeso(totalDeuda),color:'var(--red)',        click:'deudor',  deuda:'deudor', est:'todos', isAmount:true},
     ].map(function(s){
       var active = (s.est!=='todos'?INQ_FILTER.estado===s.est:INQ_FILTER.deuda===s.deuda&&s.deuda!=='todos');
+      var bdr = active ? s.color : 'var(--border)';
+      var bg  = active ? 'rgba(184,146,74,.08)' : 'var(--surface)';
+      var fsz = s.isAmount ? '18' : '24';
       return '<div data-est="'+s.est+'" data-deuda="'+s.deuda+'" onclick="inqSetFilter(this.dataset.est,this.dataset.deuda)" ' +
         'style="cursor:pointer;padding:12px 14px;border-radius:var(--radius);border:1px solid '+bdr+';background:'+bg+';transition:all .15s">' +
         '<div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">'+s.label+'</div>' +
-        '<div style="font-family:var(--serif);font-size:'+(s.isAmount?'18':'24')+'px;color:'+s.color+';font-weight:600">'+s.val+'</div>' +
+        '<div style="font-family:var(--serif);font-size:'+fsz+'px;color:'+s.color+';font-weight:600">'+s.val+'</div>' +
         '</div>';
     }).join('') +
     '</div>' +

@@ -1489,7 +1489,7 @@ function renderInqPage(el) {
     if(INQ_FILTER.buscar) {
       var q = INQ_FILTER.buscar.toLowerCase();
       var inm = i.inmId ? getInm(i.inmId) : null;
-      var txt = (i.nombre+' '+(i.dni||'')+' '+(i.tel||'')+' '+(i.email||'')+' '+(inm?inm.dir:'')).toLowerCase();
+      var txt = ((i.nombre||'')+' '+(i.dni||'')+' '+(i.tel||'')+' '+(i.email||'')+' '+(inm?inm.dir:'')).toLowerCase();
       if(txt.indexOf(q) === -1) return false;
     }
     return true;
@@ -1514,7 +1514,7 @@ function renderInqPage(el) {
     var ct = DB.contratos.find(function(c){ return c.inqId===i.id && c.estado==='vigente'; });
     var diasVence = '';
     if(ct && ct.fin) {
-      var diff = Math.round((new Date(ct.fin+'T00:00:00') - new Date()) / (1000*60*60*24));
+      var diff = ct.fin ? Math.round((new Date(ct.fin+'T00:00:00') - new Date()) / (1000*60*60*24)) : 999;
       if(diff < 0)        diasVence = '<div style="font-size:11px;color:var(--red)">Vencido hace '+Math.abs(diff)+' días</div>';
       else if(diff < 60)  diasVence = '<div style="font-size:11px;color:var(--accent-dark)">Vence en '+diff+' días</div>';
       else                diasVence = '<div style="font-size:11px;color:var(--text3)">Hasta '+h(ct.fin)+'</div>';
@@ -1524,7 +1524,7 @@ function renderInqPage(el) {
       '<td>' +
         '<div style="display:flex;align-items:center;gap:10px">' +
         '<div style="width:32px;height:32px;border-radius:50%;background:var(--gold-light);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:13px;color:var(--gold-dark);flex-shrink:0">' +
-          h(i.nombre.split(' ').map(function(n){return n[0];}).join('').slice(0,2)) +
+          h((i.nombre||'?').split(' ').map(function(n){return n[0]||'';}).join('').slice(0,2)||'?') +
         '</div>' +
         '<div><div style="font-weight:500">'+h(i.nombre)+'</div>' +
         (i.ocupacion?'<div style="font-size:11px;color:var(--text3)">'+h(i.ocupacion)+'</div>':'') +

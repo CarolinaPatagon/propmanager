@@ -576,7 +576,8 @@ var DB = {
   contratos: [],
   cobros: [],
   gastos: [],
-  incidencias: []
+  incidencias: [],
+  proveedores: []
 };
 
 // ============================================================
@@ -598,7 +599,8 @@ function saveDB() {
       contratos: DB.contratos,
       cobros: DB.cobros,
       gastos: DB.gastos,
-      incidencias: DB.incidencias
+      incidencias: DB.incidencias,
+      proveedores: DB.proveedores || []
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch(e) {
@@ -613,7 +615,8 @@ function saveDB() {
           contratos: DB.contratos,
           cobros: DB.cobros,
           gastos: DB.gastos,
-          incidencias: DB.incidencias
+          incidencias: DB.incidencias,
+          proveedores: DB.proveedores || []
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data2));
         toast('Guardado sin fotos (espacio insuficiente)', '');
@@ -635,6 +638,7 @@ function loadDB() {
     if(data.cobros) DB.cobros = data.cobros;
     if(data.gastos) DB.gastos = data.gastos;
     if(data.incidencias) DB.incidencias = data.incidencias;
+    if(data.proveedores)  DB.proveedores  = data.proveedores;
     return true;
   } catch(e) { console.warn('localStorage load failed:', e); return false; }
 }
@@ -788,6 +792,8 @@ var PAGE = 'dashboard';
 var CONTRACT_STEP = 1;
 var CONTRACT_DATA = {};
 
+function getProv(id) { return (DB.proveedores||[]).find(function(p){ return p.id===id; }); }
+
 function getLoc(id) { return (DB.locadores||[]).find(function(l){ return l.id===id; }); }
 function getDefaultLoc() { return (DB.locadores||[]).find(function(l){ return l.default; }) || (DB.locadores||[])[0] || {nombre:'Carolina Gerosa',cuit:'',domicilio:'',tel:'',email:''}; }
 
@@ -801,7 +807,7 @@ function nav(page) {
 
 function renderPage() {
   var main = document.getElementById('main');
-  var pages = {dashboard:pgDashboard,inmuebles:pgInmuebles,inquilinos:pgInquilinos,contratos:pgContratos,locadores:pgLocadores,mantenimiento:pgMantenimiento,financiero:pgFinanciero,facturacion:pgFacturacion,informes:pgInformes};
+  var pages = {dashboard:pgDashboard,inmuebles:pgInmuebles,inquilinos:pgInquilinos,contratos:pgContratos,locadores:pgLocadores,mantenimiento:pgMantenimiento,proveedores:pgProveedores,financiero:pgFinanciero,facturacion:pgFacturacion,informes:pgInformes};
   if(pages[PAGE]) pages[PAGE](main);
 }
 
@@ -3095,65 +3101,490 @@ function duracion(ini, fin) {
 // ============================================================
 // PAGE: MANTENIMIENTO
 // ============================================================
+// ============================================================
+// PAGE: MANTENIMIENTO
+// ============================================================
 function pgMantenimiento(el) {
-  var abiertas = DB.incidencias.filter(function(i){return i.estado!=='resuelto';}).length;
+  var abiertas  = DB.incidencias.filter(function(i){return i.estado!=='resuelto';}).length;
+  var costoTotal= DB.incidencias.reduce(function(s,i){return s+(i.costo||0);},0);
+  var sinAsignar= DB.incidencias.filter(function(i){return !i.provId && i.estado!=='resuelto';}).length;
+
   el.innerHTML =
     '<div class="page-header"><div>' +
     '<div class="page-title">Mantenimiento</div>' +
-    '<div class="page-subtitle">' + abiertas + ' incidencias abiertas</div>' +
-    '</div><button class="btn btn-primary" onclick="openAddInc()">+ Nueva incidencia</button></div>' +
+    '<div class="page-subtitle">'+abiertas+' incidencias abiertas · '+fmtPeso(costoTotal)+' en costos</div>' +
+    '</div><div style="display:flex;gap:8px">' +
+    '<button class="btn btn-secondary" onclick="nav(&apos;proveedores&apos;)" style="font-size:13px">&#128296; Proveedores</button>' +
+    '<button class="btn btn-primary" onclick="openAddInc()">+ Nueva incidencia</button>' +
+    '</div></div>' +
     '<div class="page-content fade-in">' +
+    // Stats row
+    '<div class="stats-grid" style="margin-bottom:20px">' +
+    '<div class="stat-card" style="border-left:3px solid var(--red)"><div class="stat-label">Abiertas</div><div class="stat-value" style="color:var(--red)">'+abiertas+'</div><div class="stat-sub">'+DB.incidencias.filter(function(i){return i.estado==='pendiente';}).length+' pendientes</div></div>' +
+    '<div class="stat-card" style="border-left:3px solid var(--accent)"><div class="stat-label">En progreso</div><div class="stat-value" style="color:var(--accent-dark)">'+DB.incidencias.filter(function(i){return i.estado==='en progreso';}).length+'</div></div>' +
+    '<div class="stat-card" style="border-left:3px solid var(--green)"><div class="stat-label">Resueltas</div><div class="stat-value" style="color:var(--green)">'+DB.incidencias.filter(function(i){return i.estado==='resuelto';}).length+'</div></div>' +
+    '<div class="stat-card" style="border-left:3px solid var(--blue)"><div class="stat-label">Costo total</div><div class="stat-value" style="color:var(--blue)">$'+Math.round(costoTotal/1000)+'k</div><div class="stat-sub">'+DB.gastos.filter(function(g){return g.cat==='Mantenimiento';}).length+' gastos registrados</div></div>' +
+    (sinAsignar?'<div class="stat-card" style="border-left:3px solid var(--amber,#F59E0B)"><div class="stat-label">Sin proveedor</div><div class="stat-value" style="color:#B45309">'+sinAsignar+'</div><div class="stat-sub">sin asignar</div></div>':'') +
+    '</div>' +
+    // Tabs
     '<div class="tabs" id="inc-tabs">' +
     '<div class="tab active" onclick="switchTab(this,0)">Todas</div>' +
     '<div class="tab" onclick="switchTab(this,1)">Pendientes</div>' +
     '<div class="tab" onclick="switchTab(this,2)">En progreso</div>' +
     '<div class="tab" onclick="switchTab(this,3)">Resueltas</div>' +
     '</div>' +
-    '<div id="inc-table">' + renderIncTable(DB.incidencias) + '</div>' +
+    '<div id="inc-table">'+renderIncTable(DB.incidencias)+'</div>' +
     '</div>';
 }
 
-
 function renderIncTable(list) {
-  return '<div class="table-wrap"><table><thead><tr><th>Prioridad</th><th>Incidencia</th><th>Inmueble</th><th>Inquilino</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>' +
+  if(!list.length) return '<div style="text-align:center;padding:40px;color:var(--text3)">Sin incidencias en esta categoría</div>';
+  return '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Prioridad</th><th>Incidencia</th><th>Inmueble</th><th>Proveedor</th>' +
+    '<th>Costo</th><th>Fecha</th><th>Estado</th><th></th>' +
+    '</tr></thead><tbody>' +
     list.map(function(inc) {
-      var inm=getInm(inc.inmId);
-      return '<tr><td><span class="dot ' + (inc.prio==='alta'?'dot-red':'dot-amber') + '"></span></td>' +
-        '<td style="font-weight:500">' + h(inc.titulo) + '</td>' +
-        '<td style="font-size:12px">' + h(inm?inm.barrio+' · '+inm.dir.split(',')[0]:'—') + '</td>' +
-        '<td style="font-size:12px">' + h(inc.inqNombre) + '</td>' +
-        '<td style="font-size:12px;color:var(--text3)">' + h(inc.fecha) + '</td>' +
-        '<td>' + statusBadge(inc.estado) + '</td></tr>';
-    }).join('') + '</tbody></table></div>';
+      var inm  = getInm(inc.inmId);
+      var prov = getProv(inc.provId);
+      var hasFactura = inc.facturas && inc.facturas.length > 0;
+      return '<tr>' +
+        '<td><span class="dot '+(inc.prio==='alta'?'dot-red':inc.prio==='media'?'dot-amber':'dot-gray')+'"></span></td>' +
+        '<td>' +
+          '<div style="font-weight:500">'+h(inc.titulo)+'</div>' +
+          (inc.desc?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+h(inc.desc.slice(0,60))+(inc.desc.length>60?'…':'')+'</div>':'') +
+          (hasFactura?'<div style="font-size:11px;color:var(--blue);margin-top:2px">📎 '+inc.facturas.length+' factura'+(inc.facturas.length>1?'s':'')+'</div>':'') +
+        '</td>' +
+        '<td style="font-size:12px;color:var(--text2)">'+h(inm?inm.dir.split(',')[0]:'—')+'</td>' +
+        '<td>' + (prov ?
+          '<div style="font-size:12px;font-weight:500">'+h(prov.nombre)+'</div>' +
+          '<div style="font-size:11px;color:var(--text3)">'+h(prov.rubro||'')+'</div>'
+          : '<span style="font-size:12px;color:var(--text3)">Sin asignar</span>') +
+        '</td>' +
+        '<td style="font-size:13px;font-weight:500;color:'+(inc.costo?'var(--text)':'var(--text3)')+'">'+
+          (inc.costo?fmtPeso(inc.costo):'—')+'</td>' +
+        '<td style="font-size:12px;color:var(--text3)">'+h(inc.fecha)+'</td>' +
+        '<td>'+statusBadge(inc.estado)+'</td>' +
+        '<td>' +
+          '<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px" onclick="openEditInc('+inc.id+')">✏️</button>' +
+          (inc.estado!=='resuelto'?'<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;color:var(--green)" onclick="resolverInc('+inc.id+')">✓</button>':'') +
+        '</td>' +
+        '</tr>';
+    }).join('') +
+    '</tbody></table></div>';
 }
 
 function switchTab(btn, idx) {
   document.querySelectorAll('#inc-tabs .tab').forEach(function(t){t.classList.remove('active');});
   btn.classList.add('active');
-  var filters = [null, 'pendiente', 'en progreso', 'resuelto'];
+  var filters = [null,'pendiente','en progreso','resuelto'];
   var f = filters[idx];
   var list = f ? DB.incidencias.filter(function(i){return i.estado===f;}) : DB.incidencias;
   document.getElementById('inc-table').innerHTML = renderIncTable(list);
 }
 
 function openAddInc() {
-  var opts = DB.inmuebles.map(function(p){ return '<option value="' + p.id + '">' + h(p.barrio+' - '+p.dir.split(',')[0]) + '</option>'; }).join('');
-  openModal('Nueva incidencia',
-    '<div class="form-grid">' +
-    '<div class="form-field full"><label>Título</label><input id="inc-tit" type="text" placeholder="Descripción breve"></div>' +
-    '<div class="form-field"><label>Inmueble</label><select id="inc-inm">' + opts + '</select></div>' +
-    '<div class="form-field"><label>Prioridad</label><select id="inc-prio"><option>alta</option><option>media</option><option>baja</option></select></div>' +
-    '<div class="form-field full"><label>Descripción</label><textarea id="inc-desc" placeholder="Detallá el problema..."></textarea></div>' +
-    '</div>',
-    false,
-    modalFooter([{label:'Guardar',cls:'btn-primary',action:function(){
-      var tit=document.getElementById('inc-tit').value.trim();
-      if(!tit){toast('Ingresá el título','error');return;}
-      DB.incidencias.push({id:Date.now(),inmId:parseInt(document.getElementById('inc-inm').value),titulo:tit,prio:document.getElementById('inc-prio').value,estado:'pendiente',fecha:new Date().toISOString().split('T')[0],inqNombre:'—'});
-      saveDB(); closeModal(); nav('mantenimiento'); toast('Incidencia registrada','success');
-    }}])
-  );
+  var inmOpts = DB.inmuebles.map(function(p){
+    return '<option value="'+p.id+'">'+h(p.dir.split(',')[0])+(p.estado==='alquilado'?' (alquilado)':'')+'</option>';
+  }).join('');
+  var provOpts = '<option value="">Sin asignar</option>' +
+    (DB.proveedores||[]).map(function(p){
+      return '<option value="'+p.id+'">'+h(p.nombre)+(p.rubro?' — '+p.rubro:'')+'</option>';
+    }).join('');
+
+  var bodyEl = document.createElement('div');
+  bodyEl.className = 'form-grid';
+  bodyEl.innerHTML =
+    '<div class="form-field full"><label>Título *</label>' +
+    '<input id="inc-tit" type="text" placeholder="ej: Pérdida de agua en baño, Calefactor roto..."></div>' +
+    '<div class="form-field"><label>Inmueble *</label>' +
+    '<select id="inc-inm">'+inmOpts+'</select></div>' +
+    '<div class="form-field"><label>Prioridad</label>' +
+    '<select id="inc-prio"><option value="alta">🔴 Alta — urgente</option><option value="media" selected>🟡 Media</option><option value="baja">⚪ Baja</option></select></div>' +
+    '<div class="form-field full"><label>Descripción</label>' +
+    '<textarea id="inc-desc" placeholder="Detallá el problema, qué se necesita reparar..."></textarea></div>' +
+    '<div class="form-field"><label>Proveedor asignado</label>' +
+    '<select id="inc-prov">'+provOpts+'</select></div>' +
+    '<div class="form-field"><label>Costo estimado ($)</label>' +
+    '<input id="inc-costo" type="number" placeholder="0"></div>' +
+    '<div class="form-field"><label>Fecha inicio</label>' +
+    '<input id="inc-fecha" type="date" value="'+new Date().toISOString().split('T')[0]+'"></div>' +
+    '<div class="form-field"><label>Estado inicial</label>' +
+    '<select id="inc-est"><option value="pendiente">Pendiente</option><option value="en progreso">En progreso</option></select></div>';
+
+  var footer = modalFooter([{label:'Guardar',cls:'btn-primary',action:function(){
+    var tit = document.getElementById('inc-tit').value.trim();
+    if(!tit){toast('Ingresá el título','error');return;}
+    var inmId = parseInt(document.getElementById('inc-inm').value);
+    var inm2  = getInm(inmId);
+    var inqNom = (function(){
+      var ct = DB.contratos.find(function(c){return c.inmId===inmId && c.estado==='vigente';});
+      if(!ct) return '—';
+      var inq2 = getInq(ct.inqId);
+      return inq2 ? inq2.nombre : '—';
+    })();
+    var newId = DB.incidencias.length ? Math.max.apply(null,DB.incidencias.map(function(x){return x.id;})) + 1 : 1;
+    DB.incidencias.push({
+      id:       newId,
+      inmId:    inmId,
+      titulo:   tit,
+      desc:     document.getElementById('inc-desc').value.trim(),
+      prio:     document.getElementById('inc-prio').value,
+      estado:   document.getElementById('inc-est').value,
+      fecha:    document.getElementById('inc-fecha').value,
+      inqNombre:inqNom,
+      provId:   parseInt(document.getElementById('inc-prov').value)||null,
+      costo:    parseInt(document.getElementById('inc-costo').value)||0,
+      facturas: []
+    });
+    saveDB();
+    closeModal();
+    nav('mantenimiento');
+    toast('Incidencia registrada','success');
+  }}]);
+  openModal('Nueva incidencia', bodyEl, false, footer);
 }
+
+function openEditInc(id) {
+  var inc = DB.incidencias.find(function(x){return x.id===id;}); if(!inc) return;
+  var inmOpts = DB.inmuebles.map(function(p){
+    return '<option value="'+p.id+'"'+(inc.inmId===p.id?' selected':'')+'>'+h(p.dir.split(',')[0])+'</option>';
+  }).join('');
+  var provOpts = '<option value="">Sin asignar</option>' +
+    (DB.proveedores||[]).map(function(p){
+      return '<option value="'+p.id+'"'+(inc.provId===p.id?' selected':'')+'>'+h(p.nombre)+(p.rubro?' — '+p.rubro:'')+'</option>';
+    }).join('');
+
+  var bodyEl = document.createElement('div');
+  bodyEl.innerHTML =
+    '<div class="form-grid">' +
+    '<div class="form-field full"><label>Título *</label>' +
+    '<input id="ei-tit" type="text" value="'+h(inc.titulo||'')+'"></div>' +
+    '<div class="form-field"><label>Inmueble</label>' +
+    '<select id="ei-inm">'+inmOpts+'</select></div>' +
+    '<div class="form-field"><label>Prioridad</label>' +
+    '<select id="ei-prio">' +
+    ['alta','media','baja'].map(function(p){return '<option'+(inc.prio===p?' selected':'')+'>'+p+'</option>';}).join('')+
+    '</select></div>' +
+    '<div class="form-field full"><label>Descripción</label>' +
+    '<textarea id="ei-desc">'+h(inc.desc||'')+'</textarea></div>' +
+    '<div class="form-field"><label>Estado</label>' +
+    '<select id="ei-est">' +
+    ['pendiente','en progreso','resuelto'].map(function(s){return '<option'+(inc.estado===s?' selected':'')+'>'+s+'</option>';}).join('')+
+    '</select></div>' +
+    '<div class="form-field"><label>Proveedor</label>' +
+    '<select id="ei-prov">'+provOpts+'</select></div>' +
+    '<div class="form-field"><label>Costo real ($)</label>' +
+    '<input id="ei-costo" type="number" value="'+(inc.costo||0)+'"></div>' +
+    '<div class="form-field"><label>Fecha</label>' +
+    '<input id="ei-fecha" type="date" value="'+(inc.fecha||'')+'"></div>' +
+    '</div>' +
+
+    // Facturas section
+    '<div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+    '<div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Facturas / Comprobantes</div>' +
+    '<label class="btn btn-secondary" style="font-size:12px;cursor:pointer">📎 Adjuntar factura' +
+    '<input type="file" accept="image/*,.pdf" multiple style="display:none" onchange="adjuntarFacturaInc('+id+',this)"></label>' +
+    '</div>' +
+    '<div id="facturas-list-'+id+'">' + renderFacturasList(inc) + '</div>' +
+    '</div>' +
+
+    // Nota de resolución si resuelto
+    '<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">' +
+    '<div class="form-field"><label>Nota de resolución (opcional)</label>' +
+    '<textarea id="ei-nota" placeholder="Cómo se resolvió, qué se reemplazó...">'+h(inc.notaResolucion||'')+'</textarea>' +
+    '</div></div>';
+
+  var footer = modalFooter([{label:'Guardar cambios',cls:'btn-green',action:function(){
+    var tit = document.getElementById('ei-tit').value.trim();
+    if(!tit){toast('Ingresá el título','error');return;}
+    var nuevoEstado = document.getElementById('ei-est').value;
+    var nuevoCosto  = parseInt(document.getElementById('ei-costo').value)||0;
+    var costoAntes  = inc.costo||0;
+
+    inc.titulo    = tit;
+    inc.inmId     = parseInt(document.getElementById('ei-inm').value);
+    inc.prio      = document.getElementById('ei-prio').value;
+    inc.estado    = nuevoEstado;
+    inc.desc      = document.getElementById('ei-desc').value.trim();
+    inc.provId    = parseInt(document.getElementById('ei-prov').value)||null;
+    inc.costo     = nuevoCosto;
+    inc.fecha     = document.getElementById('ei-fecha').value;
+    inc.notaResolucion = document.getElementById('ei-nota').value.trim();
+    if(nuevoEstado==='resuelto' && !inc.fechaResolucion) {
+      inc.fechaResolucion = new Date().toISOString().split('T')[0];
+    }
+
+    // Auto-register cost as a gasto if it changed and is > 0
+    if(nuevoCosto > 0 && nuevoCosto !== costoAntes) {
+      var inm2 = getInm(inc.inmId);
+      // Remove old gasto linked to this incidencia
+      DB.gastos = DB.gastos.filter(function(g){return g.incId!==inc.id;});
+      // Add new gasto
+      var newGId = DB.gastos.length ? Math.max.apply(null,DB.gastos.map(function(g){return g.id;})) + 1 : 1;
+      DB.gastos.push({
+        id:newGId, concepto:'Mantenimiento: '+inc.titulo,
+        monto:nuevoCosto, cat:'Mantenimiento',
+        fecha:new Date().toISOString().split('T')[0],
+        inmId:inc.inmId, incId:inc.id,
+        obs:'Auto-registrado desde incidencia #'+inc.id
+      });
+    }
+
+    saveDB();
+    closeModal();
+    nav('mantenimiento');
+    toast('Incidencia actualizada','success');
+  }}]);
+
+  openModal('Editar incidencia', bodyEl, false, footer);
+}
+
+function renderFacturasList(inc) {
+  var facturas = inc.facturas || [];
+  if(!facturas.length) {
+    return '<div style="background:var(--surface2);border-radius:var(--radius);padding:14px;text-align:center;font-size:12px;color:var(--text3)">'+
+      '📎 Sin facturas adjuntas — adjuntá PDFs o imágenes de las facturas</div>';
+  }
+  return facturas.map(function(f, idx) {
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border-radius:var(--radius);margin-bottom:6px;border:1px solid var(--border)">' +
+      '<span style="font-size:18px">'+(f.type==='application/pdf'?'📄':'🖼️')+'</span>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:500">'+h(f.name)+'</div>' +
+        '<div style="font-size:11px;color:var(--text3)">'+h(f.fecha)+(f.monto?' · '+fmtPeso(f.monto):'')+(f.proveedor?' · '+h(f.proveedor):'')+'</div>' +
+      '</div>' +
+      '<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px" onclick="downloadComp(DB.incidencias.find(function(x){return x.id==='+inc.id+'}).facturas['+idx+'])">⬇</button>' +
+      '<button class="btn btn-danger" style="font-size:11px;padding:4px 8px" onclick="eliminarFactura('+inc.id+','+idx+')">🗑</button>' +
+    '</div>';
+  }).join('');
+}
+
+function adjuntarFacturaInc(incId, input) {
+  var inc = DB.incidencias.find(function(x){return x.id===incId;}); if(!inc) return;
+  if(!inc.facturas) inc.facturas = [];
+  var files = Array.from(input.files); if(!files.length) return;
+  var loaded = 0;
+  var fileDataList = [];
+  files.forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      fileDataList.push({name:file.name,type:file.type,size:file.size,data:e.target.result,fecha:new Date().toLocaleDateString('es-AR')});
+      loaded++;
+      if(loaded===files.length) showFacturaModal(inc, fileDataList);
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function showFacturaModal(inc, fileDataList) {
+  var provOpts = '<option value="">Sin especificar</option>' +
+    (DB.proveedores||[]).map(function(p){
+      return '<option value="'+h(p.nombre)+'">'+h(p.nombre)+'</option>';
+    }).join('');
+  var bodyEl = document.createElement('div');
+  bodyEl.innerHTML =
+    '<p style="font-size:13px;color:var(--text2);margin-bottom:14px">Adjuntando <strong>'+fileDataList.length+' archivo'+(fileDataList.length>1?'s':'')+'</strong> a incidencia: <strong>'+h(inc.titulo)+'</strong></p>' +
+    '<div class="form-grid">' +
+    '<div class="form-field"><label>Monto de la factura ($)</label>' +
+    '<input id="fac-monto" type="number" placeholder="0"></div>' +
+    '<div class="form-field"><label>Proveedor</label>' +
+    '<select id="fac-prov">'+provOpts+'</select></div>' +
+    '<div class="form-field full"><label>Número de factura / referencia</label>' +
+    '<input id="fac-num" type="text" placeholder="FAC-0001-00012345"></div>' +
+    '<div class="form-field full"><label>Nota</label>' +
+    '<input id="fac-nota" type="text" placeholder="Descripción del trabajo realizado..."></div>' +
+    '</div>';
+  var footer = modalFooter([{label:'Adjuntar factura',cls:'btn-green',action:function(){
+    var monto   = parseInt(document.getElementById('fac-monto').value)||0;
+    var prov    = document.getElementById('fac-prov').value;
+    var numFac  = document.getElementById('fac-num').value.trim();
+    var nota    = document.getElementById('fac-nota').value.trim();
+    fileDataList.forEach(function(f){
+      f.monto    = monto;
+      f.proveedor= prov;
+      f.numFac   = numFac;
+      f.nota     = nota;
+      inc.facturas.push(f);
+    });
+    // Update inc cost if monto provided
+    if(monto && !inc.costo) { inc.costo = monto; }
+    else if(monto) { inc.costo = (inc.costo||0) + monto; }
+    // Register as gasto
+    if(monto > 0) {
+      var newGId = DB.gastos.length ? Math.max.apply(null,DB.gastos.map(function(g){return g.id;})) + 1 : 1;
+      DB.gastos.push({
+        id:newGId, concepto:(numFac?numFac+' — ':'')+inc.titulo,
+        monto:monto, cat:'Mantenimiento',
+        fecha:new Date().toISOString().split('T')[0],
+        inmId:inc.inmId, incId:inc.id,
+        obs:'Factura adjunta'+( prov?' — '+prov:'')
+      });
+    }
+    saveDB();
+    var listEl = document.getElementById('facturas-list-'+inc.id);
+    if(listEl) listEl.innerHTML = renderFacturasList(inc);
+    closeModal();
+    toast(fileDataList.length+' factura'+(fileDataList.length>1?'s':'')+' adjunta'+(fileDataList.length>1?'s':''),'success');
+  }}]);
+  openModal('Adjuntar factura', bodyEl, false, footer);
+}
+
+function eliminarFactura(incId, idx) {
+  if(!confirm('¿Eliminar esta factura?')) return;
+  var inc = DB.incidencias.find(function(x){return x.id===incId;}); if(!inc) return;
+  inc.facturas.splice(idx,1);
+  saveDB();
+  var listEl = document.getElementById('facturas-list-'+incId);
+  if(listEl) listEl.innerHTML = renderFacturasList(inc);
+}
+
+function resolverInc(id) {
+  var inc = DB.incidencias.find(function(x){return x.id===id;}); if(!inc) return;
+  inc.estado = 'resuelto';
+  inc.fechaResolucion = new Date().toISOString().split('T')[0];
+  saveDB();
+  nav('mantenimiento');
+  toast('Incidencia marcada como resuelta ✓','success');
+}
+
+// ============================================================
+// PAGE: PROVEEDORES
+// ============================================================
+function pgProveedores(el) {
+  var provs = DB.proveedores || [];
+  var rows = provs.map(function(p) {
+    var incCount = DB.incidencias.filter(function(i){return i.provId===p.id;}).length;
+    var costoTotal = DB.incidencias.filter(function(i){return i.provId===p.id;}).reduce(function(s,i){return s+(i.costo||0);},0);
+    return '<tr>' +
+      '<td><div style="font-weight:500">'+h(p.nombre)+'</div>'+
+        (p.empresa?'<div style="font-size:11px;color:var(--text3)">'+h(p.empresa)+'</div>':'')+
+      '</td>' +
+      '<td><span class="badge badge-blue" style="font-size:11px">'+h(p.rubro||'General')+'</span></td>' +
+      '<td style="font-size:13px">'+h(p.tel||'—')+'</td>' +
+      '<td style="font-size:13px">'+h(p.email||'—')+'</td>' +
+      '<td style="font-size:12px;color:var(--text3)">'+h(p.localidad||'Esquel')+'</td>' +
+      '<td style="text-align:center"><div style="font-weight:500">'+incCount+'</div><div style="font-size:11px;color:var(--text3)">trabajos</div></td>' +
+      '<td style="font-weight:500;color:var(--text)">'+fmtPeso(costoTotal)+'</td>' +
+      '<td>' +
+        '<button class="btn btn-ghost" style="font-size:11px" onclick="openEditProv('+p.id+')">✏️ Editar</button>' +
+        '<button class="btn btn-ghost" style="font-size:11px;color:var(--red)" onclick="deleteProv('+p.id+')">🗑</button>' +
+      '</td>' +
+      '</tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Sin proveedores · agregá tu primer proveedor</td></tr>';
+
+  el.innerHTML =
+    '<div class="page-header">' +
+    '<div><div class="page-title">Proveedores</div>' +
+    '<div class="page-subtitle">Registro de proveedores de mantenimiento y reparaciones</div></div>' +
+    '<button class="btn btn-primary" onclick="openAddProv()">+ Nuevo proveedor</button>' +
+    '</div>' +
+    '<div class="page-content fade-in">' +
+    '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Nombre / Empresa</th><th>Rubro</th><th>Teléfono</th><th>Email</th><th>Localidad</th><th>Trabajos</th><th>Costo total</th><th></th>' +
+    '</tr></thead><tbody>'+rows+'</tbody></table></div>' +
+    '</div>';
+}
+
+function openAddProv() {
+  var bodyEl = document.createElement('div');
+  bodyEl.className = 'form-grid';
+  bodyEl.innerHTML =
+    '<div class="form-field"><label>Nombre *</label>' +
+    '<input id="np-nombre" type="text" placeholder="Juan García"></div>' +
+    '<div class="form-field"><label>Empresa (opcional)</label>' +
+    '<input id="np-empresa" type="text" placeholder="García Reparaciones SRL"></div>' +
+    '<div class="form-field"><label>Rubro / Especialidad *</label>' +
+    '<select id="np-rubro">' +
+    ['Plomería','Electricidad','Gas','Pintura','Albañilería','Cerrajería','Herrería','Carpintería','Refrigeración / Aire','Limpieza','Jardín','Seguridad','Informática','General'].map(function(r){
+      return '<option>'+r+'</option>';
+    }).join('')+
+    '</select></div>' +
+    '<div class="form-field"><label>Teléfono *</label>' +
+    '<input id="np-tel" type="text" placeholder="02945 123456"></div>' +
+    '<div class="form-field"><label>Email</label>' +
+    '<input id="np-email" type="email" placeholder="proveedor@email.com"></div>' +
+    '<div class="form-field"><label>WhatsApp</label>' +
+    '<input id="np-wa" type="text" placeholder="02945 123456"></div>' +
+    '<div class="form-field"><label>CUIT / DNI</label>' +
+    '<input id="np-cuit" type="text" placeholder="20-XXXXXXXX-X"></div>' +
+    '<div class="form-field"><label>Localidad</label>' +
+    '<input id="np-loc" type="text" value="Esquel"></div>' +
+    '<div class="form-field full"><label>Dirección</label>' +
+    '<input id="np-dir" type="text" placeholder="Av. Fontana 456, Esquel"></div>' +
+    '<div class="form-field full"><label>Observaciones / Notas</label>' +
+    '<textarea id="np-obs" placeholder="Horarios, condiciones, trabajos anteriores..."></textarea></div>';
+
+  var footer = modalFooter([{label:'Guardar proveedor',cls:'btn-green',action:function(){
+    var nombre = document.getElementById('np-nombre').value.trim();
+    if(!nombre){toast('Ingresá el nombre','error');return;}
+    var newId = (DB.proveedores||[]).length ? Math.max.apply(null,(DB.proveedores||[]).map(function(p){return p.id;})) + 1 : 1;
+    if(!DB.proveedores) DB.proveedores = [];
+    DB.proveedores.push({
+      id:newId, nombre:nombre,
+      empresa: document.getElementById('np-empresa').value.trim(),
+      rubro:   document.getElementById('np-rubro').value,
+      tel:     document.getElementById('np-tel').value.trim(),
+      email:   document.getElementById('np-email').value.trim(),
+      wa:      document.getElementById('np-wa').value.trim(),
+      cuit:    document.getElementById('np-cuit').value.trim(),
+      localidad: document.getElementById('np-loc').value.trim(),
+      dir:     document.getElementById('np-dir').value.trim(),
+      obs:     document.getElementById('np-obs').value.trim()
+    });
+    saveDB();
+    closeModal();
+    if(PAGE==='proveedores') nav('proveedores');
+    toast('Proveedor guardado ✓','success');
+  }}]);
+  openModal('Nuevo proveedor', bodyEl, false, footer);
+}
+
+function openEditProv(id) {
+  var p = getProv(id); if(!p) return;
+  var rubros = ['Plomería','Electricidad','Gas','Pintura','Albañilería','Cerrajería','Herrería','Carpintería','Refrigeración / Aire','Limpieza','Jardín','Seguridad','Informática','General'];
+  var bodyEl = document.createElement('div');
+  bodyEl.className = 'form-grid';
+  bodyEl.innerHTML =
+    '<div class="form-field"><label>Nombre *</label><input id="ep-nombre" type="text" value="'+h(p.nombre||'')+'"></div>' +
+    '<div class="form-field"><label>Empresa</label><input id="ep-empresa" type="text" value="'+h(p.empresa||'')+'"></div>' +
+    '<div class="form-field"><label>Rubro</label><select id="ep-rubro">'+rubros.map(function(r){return '<option'+(p.rubro===r?' selected':'')+'>'+r+'</option>';}).join('')+'</select></div>' +
+    '<div class="form-field"><label>Teléfono</label><input id="ep-tel" type="text" value="'+h(p.tel||'')+'"></div>' +
+    '<div class="form-field"><label>Email</label><input id="ep-email" type="email" value="'+h(p.email||'')+'"></div>' +
+    '<div class="form-field"><label>WhatsApp</label><input id="ep-wa" type="text" value="'+h(p.wa||'')+'"></div>' +
+    '<div class="form-field"><label>CUIT / DNI</label><input id="ep-cuit" type="text" value="'+h(p.cuit||'')+'"></div>' +
+    '<div class="form-field"><label>Localidad</label><input id="ep-loc" type="text" value="'+h(p.localidad||'Esquel')+'"></div>' +
+    '<div class="form-field full"><label>Dirección</label><input id="ep-dir" type="text" value="'+h(p.dir||'')+'"></div>' +
+    '<div class="form-field full"><label>Observaciones</label><textarea id="ep-obs">'+h(p.obs||'')+'</textarea></div>';
+
+  var footer = modalFooter([{label:'Guardar cambios',cls:'btn-green',action:function(){
+    p.nombre  = document.getElementById('ep-nombre').value.trim();
+    p.empresa = document.getElementById('ep-empresa').value.trim();
+    p.rubro   = document.getElementById('ep-rubro').value;
+    p.tel     = document.getElementById('ep-tel').value.trim();
+    p.email   = document.getElementById('ep-email').value.trim();
+    p.wa      = document.getElementById('ep-wa').value.trim();
+    p.cuit    = document.getElementById('ep-cuit').value.trim();
+    p.localidad=document.getElementById('ep-loc').value.trim();
+    p.dir     = document.getElementById('ep-dir').value.trim();
+    p.obs     = document.getElementById('ep-obs').value.trim();
+    saveDB(); closeModal();
+    if(PAGE==='proveedores') nav('proveedores');
+    toast('Proveedor actualizado ✓','success');
+  }}]);
+  openModal('Editar proveedor — '+p.nombre, bodyEl, false, footer);
+}
+
+function deleteProv(id) {
+  var p = getProv(id); if(!p) return;
+  if(!confirm('¿Eliminar a '+p.nombre+'? Las incidencias asociadas quedarán sin proveedor.')) return;
+  DB.incidencias.forEach(function(i){ if(i.provId===id) i.provId=null; });
+  DB.proveedores = DB.proveedores.filter(function(x){return x.id!==id;});
+  saveDB();
+  nav('proveedores');
+  toast('Proveedor eliminado','success');
+}
+
 
 // ============================================================
 // PAGE: FINANCIERO

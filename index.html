@@ -945,7 +945,21 @@ function filterLabel() {
 
 function cobrosFiltered() {
   return DB.cobros.filter(function(c) {
+    // Include cobros with no contract (registered via comprobante upload)
     var ct = getCt(c.ctId);
+    if(!ct && !c.ctId) {
+      // For direct cobros: only filter by date, not by inmueble (no contract to link)
+      if(FILTER.periodo === 'este_mes') {
+        var hoy0=new Date(); var mes0=String(hoy0.getMonth()+1).padStart(2,'0'); var anio0=hoy0.getFullYear();
+        return (c.vence||'').startsWith(anio0+'-'+mes0) || (c.fechaPago||'').startsWith(anio0+'-'+mes0);
+      }
+      if(FILTER.periodo === 'este_anio') return (c.vence||c.fechaPago||'').startsWith(String(new Date().getFullYear()));
+      if(FILTER.periodo === 'personalizado' && FILTER.desde && FILTER.hasta) {
+        var d = c.vence||c.fechaPago||'';
+        return d >= FILTER.desde && d <= FILTER.hasta;
+      }
+      return FILTER.inmuebleId === 'todos'; // only show in "all" filter
+    }
     if(!ct) return false;
     if(FILTER.inmuebleId !== 'todos' && ct.inmId !== parseInt(FILTER.inmuebleId)) return false;
     if(FILTER.periodo === 'este_mes') {
@@ -1040,9 +1054,17 @@ function pgDashboard(el) {
 
   // Cobros por inmueble (for mini chart)
   var cobradoPorInm = DB.inmuebles.map(function(p){
-    return cobros.filter(function(c){
+    // Via contract
+    var viaContrato = cobros.filter(function(c){
       var ct=getCt(c.ctId); return ct && ct.inmId===p.id && c.estado==='cobrado';
     }).reduce(function(s,c){return s+c.monto;},0);
+    // Via direct (cobros linked to inquilinos that live in this inmueble)
+    var directo = cobros.filter(function(c){
+      if(c.ctId) return false; // already counted above
+      var inq2 = DB.inquilinos.find(function(i){ return i.inmId===p.id; });
+      return inq2 && c.estado==='cobrado';
+    }).reduce(function(s,c){return s+c.monto;},0);
+    return viaContrato + directo;
   });
 
   var cobrosRows = cobros.filter(function(c){return c.estado==='pendiente';}).map(function(c) {
@@ -1468,7 +1490,14 @@ function showInqDetail(id) {
   // ---- Historial de pagos ----
   var pagosDiv = document.createElement('div');
   pagosDiv.style.cssText = 'border-top:1px solid var(--border);padding-top:14px;margin-top:16px';
-  pagosDiv.innerHTML = '<div style="font-size:12px;font-weight:600;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Historial de cobros registrados</div>' + pagoRows;
+  var pagosTitle = document.createElement('div');
+  pagosTitle.style.cssText = 'font-size:12px;font-weight:600;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em';
+  pagosTitle.textContent = 'Historial de cobros registrados';
+  pagosDiv.appendChild(pagosTitle);
+  var pagosContent = document.createElement('div');
+  pagosContent.id = 'historial-cobros-' + id;
+  renderHistorialCobros(pagosContent, id);
+  pagosDiv.appendChild(pagosContent);
   body.appendChild(pagosDiv);
 
   openModal('Ficha del inquilino', body, true);
@@ -1754,57 +1783,71 @@ function showPeriodoModal(inq, fileDataList, container) {
   var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   var defaultPeriodo = meses[hoy.getMonth()] + ' ' + hoy.getFullYear();
 
-  // Build list of cobros pendientes para este inquilino
+  // Cobros pendientes del inquilino (via contratos)
   var cobrosPendientes = [];
-  DB.contratos.filter(function(ct){ return ct.inqId === inq.id; }).forEach(function(ct) {
-    DB.cobros.filter(function(c){ return c.ctId === ct.id && c.estado !== 'cobrado'; }).forEach(function(c) {
-      cobrosPendientes.push(c);
+  DB.contratos.filter(function(ct){ return ct.inqId === inq.id; }).forEach(function(ct){
+    DB.cobros.filter(function(c){ return c.ctId===ct.id && c.estado!=='cobrado'; }).forEach(function(c){
+      cobrosPendientes.push({cobro:c, ct:ct});
     });
   });
 
-  // Build period selector: pending cobros first, then free text
-  var periodoOpts = '<option value="">── Escribir período manualmente ──</option>';
-  if(cobrosPendientes.length) {
-    periodoOpts = '<option value="">── Escribir período manualmente ──</option>' +
-      cobrosPendientes.map(function(c) {
-        return '<option value="cobro:' + c.id + '">' + h(c.mes) + ' — ' + fmtPeso(c.monto) + ' (' + h(c.estado) + ')</option>';
-      }).join('');
+  // También buscar contratos por inmueble si inq.inmId está asignado
+  if(!cobrosPendientes.length && inq.inmId) {
+    DB.contratos.filter(function(ct){ return ct.inmId===inq.inmId && ct.inqId===null; }).forEach(function(ct){
+      DB.cobros.filter(function(c){ return c.ctId===ct.id && c.estado!=='cobrado'; }).forEach(function(c){
+        cobrosPendientes.push({cobro:c, ct:ct});
+      });
+    });
   }
+
+  var hasPendientes = cobrosPendientes.length > 0;
+  var periodoOpts = hasPendientes
+    ? '<option value="">── Período libre (sin cobro asociado) ──</option>' +
+      cobrosPendientes.map(function(item){
+        return '<option value="cobro:'+item.cobro.id+'">' +
+          h(item.cobro.mes) + ' — ' + fmtPeso(item.cobro.monto) +
+          ' (' + h(item.cobro.estado) + ')</option>';
+      }).join('')
+    : '';
 
   var bodyEl = document.createElement('div');
   bodyEl.innerHTML =
     '<p style="font-size:13px;color:var(--text2);margin-bottom:14px">' +
-    'Vas a guardar <strong>' + fileDataList.length + ' archivo' + (fileDataList.length>1?'s':'') + '</strong>:</p>' +
+    'Guardando <strong>' + fileDataList.length + ' archivo' + (fileDataList.length>1?'s':'') + '</strong>:</p>' +
     '<div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px">' +
     fileDataList.map(function(f){
       return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px">' +
-        '<span>' + (f.type==='application/pdf'?'📄':'🖼️') + '</span>' +
-        '<span>' + h(f.name) + '</span>' +
-        '<span style="color:var(--text3);font-size:11px">(' + Math.round(f.size/1024) + ' KB)</span>' +
+        '<span>'+(f.type==='application/pdf'?'📄':'🖼️')+'</span>' +
+        '<span>'+h(f.name)+'</span>' +
+        '<span style="color:var(--text3);font-size:11px">('+Math.round(f.size/1024)+' KB)</span>' +
         '</div>';
-    }).join('') + '</div>' +
-    '<div class="form-grid">' +
-
-    // Cobros pendientes selector
-    (cobrosPendientes.length ?
-      '<div class="form-field full">' +
-      '<label>Cobro pendiente a registrar</label>' +
-      '<select id="cp-cobro-sel" onchange="onCpCobroChange()">' + periodoOpts + '</select>' +
-      '<div style="font-size:11px;color:var(--green);margin-top:4px">✓ Al seleccionar un cobro se marcará como cobrado automáticamente</div>' +
+    }).join('')+'</div>'+
+    '<div class="form-grid">'+
+    (hasPendientes ?
+      '<div class="form-field full">'+
+      '<label>Vincular a cobro pendiente</label>'+
+      '<select id="cp-cobro-sel" onchange="onCpCobroChange()">'+periodoOpts+'</select>'+
+      '<div style="font-size:11px;color:var(--green);margin-top:4px">✓ Se marcará como cobrado automáticamente</div>'+
       '</div>' : '') +
-
-    '<div class="form-field full"><label>Período / Concepto' + (cobrosPendientes.length ? ' (o escribí uno libre)' : ' *') + '</label>' +
-    '<input id="cp-periodo" type="text" value="' + defaultPeriodo + '" placeholder="ej: Mayo 2025, Depósito, Expensas...">' +
-    '</div>' +
-    '<div class="form-field"><label>Monto pagado ($)</label>' +
-    '<input id="cp-monto" type="number" placeholder="0" style="border:1px solid var(--border2)">' +
-    '</div>' +
-    '<div class="form-field"><label>Medio de pago</label>' +
-    '<select id="cp-medio"><option>Transferencia bancaria</option><option>Efectivo</option><option>Cheque</option><option>Otro</option></select>' +
-    '</div>' +
-    '<div class="form-field full"><label>Nota interna (opcional)</label>' +
-    '<input id="cp-nota" type="text" placeholder="ej: Pago parcial, transferencia del día 5...">' +
-    '</div>' +
+    '<div class="form-field'+(hasPendientes?' ':' full')+'">'+
+    '<label>Período *</label>'+
+    '<input id="cp-periodo" type="text" value="'+defaultPeriodo+'" placeholder="ej: Mayo 2025, Depósito...">'+
+    '</div>'+
+    '<div class="form-field">'+
+    '<label>Monto pagado ($)</label>'+
+    '<input id="cp-monto" type="number" placeholder="0">'+
+    '</div>'+
+    '<div class="form-field">'+
+    '<label>Medio de pago</label>'+
+    '<select id="cp-medio">'+
+    '<option>Transferencia bancaria</option><option>Efectivo</option>'+
+    '<option>Cheque</option><option>Otro</option>'+
+    '</select>'+
+    '</div>'+
+    '<div class="form-field full">'+
+    '<label>Referencia / Nota (opcional)</label>'+
+    '<input id="cp-nota" type="text" placeholder="ej: Ref. transferencia #12345">'+
+    '</div>'+
     '</div>';
 
   var footer = modalFooter([{
@@ -1812,67 +1855,150 @@ function showPeriodoModal(inq, fileDataList, container) {
     cls: 'btn-green',
     action: function() {
       var periodo  = document.getElementById('cp-periodo').value.trim() || defaultPeriodo;
+      var monto    = parseInt(document.getElementById('cp-monto').value)||0;
+      var medio    = document.getElementById('cp-medio').value;
       var nota     = document.getElementById('cp-nota').value.trim();
-      var montoEl  = document.getElementById('cp-monto');
-      var monto    = montoEl ? (parseInt(montoEl.value)||0) : 0;
-      var medio    = document.getElementById('cp-medio') ? document.getElementById('cp-medio').value : 'Transferencia bancaria';
       var cobroSel = document.getElementById('cp-cobro-sel');
-      var cobroId  = cobroSel ? cobroSel.value : '';
+      var cobroVal = cobroSel ? cobroSel.value : '';
+      var fechaHoy = new Date().toISOString().split('T')[0];
 
-      // Save files as comprobantes
-      fileDataList.forEach(function(f) {
+      // ── 1. Guardar archivo(s) como comprobante ─────────────
+      var notaCompleta = [medio, nota, monto?'$'+monto.toLocaleString('es-AR'):''].filter(Boolean).join(' · ');
+      fileDataList.forEach(function(f){
         f.periodo = periodo;
-        f.nota    = nota + (medio ? ' · ' + medio : '') + (monto ? ' · $' + monto.toLocaleString('es-AR') : '');
+        f.nota    = notaCompleta;
+        inq.comprobantes = inq.comprobantes || [];
         inq.comprobantes.push(f);
       });
 
-      // If a pending cobro was selected: mark it as cobrado
-      if(cobroId && cobroId.startsWith('cobro:')) {
-        var cId = parseInt(cobroId.replace('cobro:',''));
-        var cobro = DB.cobros.find(function(c){ return c.id === cId; });
+      // ── 2. Gestionar el cobro ──────────────────────────────
+      if(cobroVal && cobroVal.startsWith('cobro:')) {
+        // Marcar cobro existente como cobrado
+        var cId = parseInt(cobroVal.replace('cobro:',''));
+        var cobro = DB.cobros.find(function(c){ return c.id===cId; });
         if(cobro) {
           cobro.estado     = 'cobrado';
-          cobro.fechaPago  = new Date().toISOString().split('T')[0];
+          cobro.fechaPago  = fechaHoy;
           cobro.medioPago  = medio;
           cobro.referencia = nota;
-          if(monto) cobro.monto = monto;
-          toast('Cobro de ' + cobro.mes + ' marcado como cobrado ✓', 'success');
+          if(monto && monto !== cobro.monto) cobro.montoPagado = monto;
+        }
+      } else if(monto > 0) {
+        // No hay cobro vinculado — crear uno nuevo registrando el pago
+        // Buscar el contrato activo del inquilino
+        var ct = DB.contratos.find(function(c){
+          return c.inqId===inq.id && c.estado==='vigente';
+        }) || DB.contratos.find(function(c){ return c.inqId===inq.id; });
+
+        var newCobroId = DB.cobros.length
+          ? Math.max.apply(null, DB.cobros.map(function(x){return x.id;})) + 1
+          : 1;
+
+        DB.cobros.push({
+          id:          newCobroId,
+          ctId:        ct ? ct.id : null,
+          mes:         periodo,
+          monto:       monto,
+          estado:      'cobrado',
+          fechaPago:   fechaHoy,
+          fechaEmision:new Date().toLocaleDateString('es-AR'),
+          medioPago:   medio,
+          referencia:  nota,
+          vence:       fechaHoy,
+          obs:         'Registrado al subir comprobante'
+        });
+
+        // Si no tiene contrato, crear uno mínimo para asociar el cobro
+        if(!ct) {
+          var newCtId = DB.contratos.length
+            ? Math.max.apply(null, DB.contratos.map(function(x){return x.id;})) + 1
+            : 1;
+          var newCtNum = 'C-'+new Date().getFullYear()+'-'+String(newCtId).padStart(3,'0');
+          DB.contratos.push({
+            id:     newCtId,
+            num:    newCtNum,
+            inmId:  inq.inmId || null,
+            inqId:  inq.id,
+            inicio: fechaHoy,
+            fin:    '',
+            monto:  monto,
+            estado: 'vigente'
+          });
+          // Link the cobro to this new contract
+          DB.cobros[DB.cobros.length-1].ctId = newCtId;
+          if(!inq.contrato) inq.contrato = newCtNum;
         }
       }
 
+      // ── 3. Guardar y refrescar ─────────────────────────────
       saveDB();
       renderCompList(container, inq);
+
+      // Refresh historial de cobros dentro de la ficha
+      var histEl = document.getElementById('historial-cobros-' + inq.id);
+      if(histEl) renderHistorialCobros(histEl, inq.id);
+
       closeModal();
 
-      // Refresh current page if on financiero/dashboard/informes
-      if(PAGE === 'financiero' || PAGE === 'dashboard' || PAGE === 'informes') {
-        setTimeout(function(){ nav(PAGE); }, 300);
+      // Refrescar página activa si es financiero/dashboard/informes
+      var refreshPages = ['financiero','dashboard','informes','facturacion'];
+      if(refreshPages.indexOf(PAGE) > -1) {
+        setTimeout(function(){ nav(PAGE); }, 400);
       }
 
-      toast(fileDataList.length + ' comprobante' + (fileDataList.length>1?'s':'') + ' guardado' + (fileDataList.length>1?'s':''), 'success');
+      var msg = fileDataList.length + ' comprobante' + (fileDataList.length>1?'s':'') + ' guardado' + (fileDataList.length>1?'s':'');
+      if(monto) msg += ' · ' + fmtPeso(monto) + ' registrado';
+      toast(msg, 'success');
     }
   }]);
 
-  openModal('Guardar comprobante' + (fileDataList.length>1?'s':''), bodyEl, false, footer);
+  openModal('Registrar pago y comprobante', bodyEl, false, footer);
 }
 
-// When a pending cobro is selected, prefill the periodo input and monto
 function onCpCobroChange() {
-  var sel = document.getElementById('cp-cobro-sel');
-  var periodoEl = document.getElementById('cp-periodo');
-  var montoEl   = document.getElementById('cp-monto');
-  if(!sel || !periodoEl) return;
-
+  var sel  = document.getElementById('cp-cobro-sel');
+  var pEl  = document.getElementById('cp-periodo');
+  var mEl  = document.getElementById('cp-monto');
+  if(!sel || !pEl) return;
   var val = sel.value;
   if(val && val.startsWith('cobro:')) {
     var cId = parseInt(val.replace('cobro:',''));
-    var cobro = DB.cobros.find(function(c){ return c.id === cId; });
+    var cobro = DB.cobros.find(function(c){ return c.id===cId; });
     if(cobro) {
-      periodoEl.value = cobro.mes;
-      if(montoEl && cobro.monto) montoEl.value = cobro.monto;
+      pEl.value = cobro.mes;
+      if(mEl) mEl.value = cobro.monto || '';
     }
   }
 }
+
+// Renderiza el historial de cobros dentro de la ficha (llamado dinámicamente)
+function renderHistorialCobros(el, inqId) {
+  var rows = DB.cobros.filter(function(c){
+    var ct = getCt(c.ctId); return ct && ct.inqId === inqId;
+  }).sort(function(a,b){ return (b.id||0)-(a.id||0); });
+
+  if(!rows.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text3);padding:8px 0">Sin registros</div>';
+    return;
+  }
+  el.innerHTML = rows.map(function(c){
+    var inm = (function(){ var ct=getCt(c.ctId); return ct?getInm(ct.inmId):null; })();
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">' +
+      '<div>' +
+      '<div style="font-size:13px;font-weight:500">'+h(c.mes)+'</div>' +
+      '<div style="font-size:11px;color:var(--text3);margin-top:2px">' +
+        (c.fechaPago?'Pagado el '+h(c.fechaPago):'Vence '+h(c.vence||'—')) +
+        (c.medioPago?' · '+h(c.medioPago):'') +
+      '</div>' +
+      '</div>' +
+      '<div style="text-align:right">' +
+      '<div style="font-size:14px;font-weight:600;color:var(--text)">'+fmtPeso(c.monto)+'</div>' +
+      statusBadge(c.estado) +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
 
 
 function downloadComp(comp) {

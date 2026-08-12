@@ -5995,39 +5995,77 @@ function liqItemNeto(item) {
   return item.cobrado - comision - gastos;
 }
 
+function confirmDelLiquidacion(id) {
+  var liq = (DB.liquidaciones||[]).find(function(l){ return l.id===id; }); if(!liq) return;
+  var loc = getLoc(liq.locadorId);
+  var body = document.createElement('div'); body.style.cssText = 'text-align:center;padding:10px 0';
+  body.innerHTML = '<div style="font-size:40px;margin-bottom:14px">⚠️</div>' +
+    '<div style="font-family:var(--serif);font-size:18px;margin-bottom:8px">¿Eliminar esta liquidación?</div>' +
+    '<p style="font-size:13px;color:var(--text3)">'+h(loc?loc.nombre:'—')+' · '+h(periodoLabel(liq.periodo))+' · '+fmtPeso(liq.totalNeto)+'</p>' +
+    '<p style="font-size:13px;color:var(--text3)">Esta acción no se puede deshacer.</p>';
+  var footer = modalFooter([{label:'Sí, eliminar', cls:'btn-danger', action:function(){
+    var idx = DB.liquidaciones.findIndex(function(l){ return l.id===id; });
+    if(idx>-1) DB.liquidaciones.splice(idx,1);
+    saveDB(); closeModal(); nav('liquidaciones');
+    toast('Liquidación eliminada','');
+  }}]);
+  openModal('Eliminar liquidación', body, false, footer);
+}
+
 function pgLiquidaciones(el) {
-  var rows = (DB.liquidaciones||[]).slice().sort(function(a,b){ return (b.periodo+b.id).localeCompare(a.periodo+a.id); }).map(function(liq) {
+  var liqs = DB.liquidaciones||[];
+  var rows = liqs.slice().sort(function(a,b){ return (b.periodo+b.id).localeCompare(a.periodo+a.id); }).map(function(liq) {
     var loc = getLoc(liq.locadorId);
+    var badge = liq.estado==='pagada' ? '<span class="badge badge-green">Pagada</span>' :
+                liq.estado==='revisar' ? '<span class="badge badge-amber">⚠️ A revisar</span>' :
+                '<span class="badge badge-gray">Borrador</span>';
     return '<tr>' +
       '<td style="font-weight:500">'+h(loc?loc.nombre:'—')+'</td>' +
       '<td style="font-size:12px">'+h(periodoLabel(liq.periodo))+'</td>' +
+      '<td style="font-size:12px;color:var(--text3)">'+fmtPeso(liq.totalComision)+'</td>' +
       '<td style="font-weight:600;color:var(--green)">'+fmtPeso(liq.totalNeto)+'</td>' +
-      '<td>'+(liq.estado==='pagada' ? '<span class="badge badge-green">Pagada</span>' : '<span class="badge badge-gray">Borrador</span>')+'</td>' +
+      '<td>'+badge+'</td>' +
       '<td style="white-space:nowrap">' +
       '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="verLiquidacion('+liq.id+')" title="Ver detalle">👁</button> ' +
       '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="descargarLiquidacionPDF('+liq.id+')" title="Descargar PDF">⬇</button> ' +
       '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="enviarLiquidacionWhatsApp('+liq.id+')" title="Enviar por WhatsApp">💬</button> ' +
-      '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="enviarLiquidacionEmail('+liq.id+')" title="Enviar por email">✉️</button>' +
+      '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="enviarLiquidacionEmail('+liq.id+')" title="Enviar por email">✉️</button> ' +
+      '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px;color:var(--red)" onclick="confirmDelLiquidacion('+liq.id+')" title="Eliminar">🗑</button>' +
       '</td></tr>';
-  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Todavía no generaste ninguna liquidación</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">Todavía no generaste ninguna liquidación</td></tr>';
 
   var locOpts = (DB.locadores||[]).map(function(l){ return '<option value="'+l.id+'">'+h(l.nombre)+'</option>'; }).join('');
   var hoy = new Date();
   var defaultPeriodo = hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
 
+  // ── Resumen para la agencia ──
+  var comisionHistorica = liqs.reduce(function(s,l){ return s+l.totalComision; }, 0);
+  var comisionEsteMes = liqs.filter(function(l){ return l.periodo===defaultPeriodo; }).reduce(function(s,l){ return s+l.totalComision; }, 0);
+  var netoHistorico = liqs.reduce(function(s,l){ return s+l.totalNeto; }, 0);
+  var pendRevisar = liqs.filter(function(l){ return l.estado==='revisar'; }).length;
+
   el.innerHTML =
     '<div class="page-header"><div><div class="page-title">Liquidaciones</div>' +
     '<div class="page-subtitle">Rendición mensual a cada propietario</div></div></div>' +
     '<div class="page-content fade-in">' +
+
+    '<div class="stats-grid" style="margin-bottom:20px">' +
+    '<div class="stat-card"><div class="stat-label">Comisión histórica</div><div class="stat-value" style="color:var(--accent-dark)">'+fmtPeso(comisionHistorica)+'</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Comisión '+h(periodoLabel(defaultPeriodo))+'</div><div class="stat-value" style="color:var(--accent-dark)">'+fmtPeso(comisionEsteMes)+'</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Total liquidado a propietarios</div><div class="stat-value" style="color:var(--green)">'+fmtPeso(netoHistorico)+'</div></div>' +
+    '<div class="stat-card" style="border-left:3px solid '+(pendRevisar?'var(--amber)':'var(--border)')+'"><div class="stat-label">A revisar</div><div class="stat-value" style="color:'+(pendRevisar?'var(--amber)':'var(--text)')+'">'+pendRevisar+'</div></div>' +
+    '</div>' +
+
     '<div class="card" style="margin-bottom:20px">' +
     '<div class="card-header"><div class="card-title">Nueva liquidación</div></div>' +
     '<div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">' +
     '<div class="form-field" style="margin:0;min-width:200px"><label>Locador</label><select id="liq-locador">'+locOpts+'</select></div>' +
     '<div class="form-field" style="margin:0"><label>Período</label><input id="liq-periodo" type="month" value="'+defaultPeriodo+'"></div>' +
     '<button class="btn btn-primary" onclick="abrirGeneracionLiquidacion()">Generar</button>' +
+    '<button class="btn btn-secondary" onclick="generarLiquidacionesMasivo()" title="Genera una liquidación borrador para todos los locadores con cobros o gastos en el período elegido">⚡ Generar todas (período elegido)</button>' +
     '</div></div>' +
     (DB.locadores&&DB.locadores.length ? '' : '<div style="background:var(--amber-light);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--amber)">Todavía no hay locadores cargados. Agregá uno en la sección Locadores.</div>') +
-    '<div class="table-wrap"><table><thead><tr><th>Locador</th><th>Período</th><th>Neto</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
+    '<div class="table-wrap"><table><thead><tr><th>Locador</th><th>Período</th><th>Comisión</th><th>Neto</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
     '</div>';
 }
 
@@ -6048,23 +6086,58 @@ function abrirGeneracionLiquidacion() {
   header.textContent = loc.nombre + ' · ' + periodoLabel(periodo);
   body.appendChild(header);
 
+  var comisionGeneralWrap = document.createElement('div');
+  comisionGeneralWrap.className = 'form-field';
+  comisionGeneralWrap.style.cssText = 'margin:0 0 16px;width:220px';
+  comisionGeneralWrap.innerHTML =
+    '<label>Comisión general (%) — aplica a todas las propiedades</label>' +
+    '<input type="number" min="0" max="100" step="0.5" id="liq-comision-general" placeholder="Ej: 10" value="'+((loc&&loc.comisionDefault)||'')+'">';
+  body.appendChild(comisionGeneralWrap);
+
   var itemsWrap = document.createElement('div');
   body.appendChild(itemsWrap);
 
   var totalRow = document.createElement('div');
-  totalRow.style.cssText = 'border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;justify-content:space-between;align-items:center';
-  totalRow.innerHTML = '<div style="font-size:13px;color:var(--text3)">Total neto a transferir</div><div id="liq-total-neto" style="font-size:24px;font-weight:600;color:var(--green)"></div>';
+  totalRow.style.cssText = 'border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px';
+  totalRow.innerHTML =
+    '<div><div style="font-size:12px;color:var(--text3)">Comisión total retenida</div>' +
+    '<div id="liq-total-comision" style="font-size:16px;font-weight:500;color:var(--accent-dark)"></div></div>' +
+    '<div style="text-align:right"><div style="font-size:13px;color:var(--text3)">Total neto a transferir</div>' +
+    '<div id="liq-total-neto" style="font-size:24px;font-weight:600;color:var(--green)"></div></div>';
   body.appendChild(totalRow);
 
   function recalcTotal() {
-    var total = items.reduce(function(s,it){ return s + liqItemNeto(it); }, 0);
-    var totalEl = body.querySelector('#liq-total-neto');
-    totalEl.textContent = fmtPeso(total);
-    totalEl.style.color = total >= 0 ? 'var(--green)' : 'var(--red)';
+    var totalNeto = items.reduce(function(s,it){ return s + liqItemNeto(it); }, 0);
+    var totalComision = items.reduce(function(s,it){ return s + Math.round(it.cobrado*((it.comisionPct||0)/100)); }, 0);
+    var netoEl = body.querySelector('#liq-total-neto');
+    netoEl.textContent = fmtPeso(totalNeto);
+    netoEl.style.color = totalNeto >= 0 ? 'var(--green)' : 'var(--red)';
+    body.querySelector('#liq-total-comision').textContent = fmtPeso(totalComision);
   }
 
-  items.forEach(function(item) { itemsWrap.appendChild(buildLiqItemRow(item, recalcTotal)); });
+  var rowRefs = items.map(function(item) {
+    var row = buildLiqItemRow(item, recalcTotal);
+    itemsWrap.appendChild(row);
+    return row;
+  });
   recalcTotal();
+
+  if(items.every(function(it){ return !it.comisionPct; })) {
+    var warn = document.createElement('div');
+    warn.style.cssText = 'background:var(--amber-light);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--amber)';
+    warn.textContent = '⚠️ Ningún inmueble tiene comisión configurada (0%). Completá "Comisión general" arriba, o el % de cada propiedad, antes de guardar.';
+    body.insertBefore(warn, itemsWrap);
+  }
+
+  var comisionGeneralInput = body.querySelector('#liq-comision-general');
+  comisionGeneralInput.addEventListener('input', function() {
+    var val = comisionGeneralInput.value;
+    rowRefs.forEach(function(row) {
+      var input = row.querySelector('[data-comision-input]');
+      input.value = val;
+      input.dispatchEvent(new Event('input', {bubbles:true}));
+    });
+  });
 
   var footer = modalFooter([
     {label:'Guardar borrador', cls:'btn-secondary', action:function(){ guardarLiquidacion(locId, periodo, items, 'borrador'); }},
@@ -6139,6 +6212,7 @@ function abrirConfirmarPagoLiquidacion(locId, periodo, items) {
 }
 
 function guardarLiquidacion(locId, periodo, items, estado, extra) {
+  var silent = extra && extra.silent;
   var totalCobrado=0, totalComision=0, totalGastos=0, totalNeto=0;
   var itemsOut = items.map(function(item) {
     var comision = Math.round(item.cobrado * ((item.comisionPct||0)/100));
@@ -6163,11 +6237,36 @@ function guardarLiquidacion(locId, periodo, items, estado, extra) {
     medioPago: (extra && extra.medioPago) || null
   };
   DB.liquidaciones.push(liq);
+  if(silent) return liq;
   saveDB();
   closeModal();
   if(PAGE==='liquidaciones') nav('liquidaciones');
   toast(estado==='pagada' ? 'Liquidación registrada como pagada ✓' : 'Liquidación guardada como borrador', 'success');
   return liq;
+}
+
+function generarLiquidacionesMasivo() {
+  var perSel = document.getElementById('liq-periodo');
+  var periodo = perSel ? perSel.value : '';
+  if(!periodo) { toast('Elegí un período','error'); return; }
+  var yaExisten = (DB.liquidaciones||[]).filter(function(l){ return l.periodo===periodo; }).map(function(l){ return l.locadorId; });
+  var candidatos = (DB.locadores||[]).filter(function(l){ return yaExisten.indexOf(l.id)===-1; });
+  if(!candidatos.length) { toast('Ya existe una liquidación de cada locador para ese período','error'); return; }
+
+  var creadas = 0, aRevisar = 0;
+  candidatos.forEach(function(loc) {
+    var items = liquidacionArmarItems(loc.id, periodo).filter(function(it){ return it.cobrado>0 || it.gastosDisponibles.length>0; });
+    if(!items.length) return;
+    var necesitaRevision = items.some(function(it){ return it.cobrado>0 && !it.comisionPct; });
+    guardarLiquidacion(loc.id, periodo, items, necesitaRevision ? 'revisar' : 'borrador', {silent:true});
+    creadas++;
+    if(necesitaRevision) aRevisar++;
+  });
+
+  if(!creadas) { toast('Ningún locador tuvo cobros o gastos ese período','error'); return; }
+  saveDB();
+  nav('liquidaciones');
+  toast(creadas + ' liquidaciones generadas' + (aRevisar ? ' · ' + aRevisar + ' a revisar (sin % de comisión)' : ''), 'success');
 }
 
 function verLiquidacion(id) {
@@ -6185,12 +6284,15 @@ function verLiquidacion(id) {
   var body = document.createElement('div');
   body.innerHTML =
     '<div style="margin-bottom:12px;font-size:13px;color:var(--text3)">'+h(loc?loc.nombre:'—')+' · '+h(periodoLabel(liq.periodo)) +
-    (liq.estado==='pagada' ? ' · <span style="color:var(--green)">Pagada '+h(liq.fechaPago||'')+(liq.medioPago?' · '+h(liq.medioPago):'')+'</span>' : ' · <span style="color:var(--text3)">Borrador</span>') +
+    (liq.estado==='pagada' ? ' · <span style="color:var(--green)">Pagada '+h(liq.fechaPago||'')+(liq.medioPago?' · '+h(liq.medioPago):'')+'</span>' :
+     liq.estado==='revisar' ? ' · <span style="color:var(--amber)">⚠️ A revisar — verificá el % de comisión</span>' :
+     ' · <span style="color:var(--text3)">Borrador</span>') +
     '</div>' +
     '<div class="table-wrap"><table><thead><tr><th>Inmueble</th><th style="text-align:right">Cobrado</th><th style="text-align:right">Comisión</th><th style="text-align:right">Gastos</th><th style="text-align:right">Neto</th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
     '<div style="text-align:right;margin-top:14px;font-size:20px;font-weight:600;color:var(--green)">Total: '+fmtPeso(liq.totalNeto)+'</div>';
 
   var footer = modalFooter([
+    {label:'🗑 Eliminar', cls:'btn-danger', action:function(){ closeModal(); setTimeout(function(){ confirmDelLiquidacion(id); }, 150); }},
     {label:'⬇ PDF', cls:'btn-secondary', action:function(){ descargarLiquidacionPDF(id); }},
     {label:'💬 WhatsApp', cls:'btn-secondary', action:function(){ closeModal(); setTimeout(function(){ enviarLiquidacionWhatsApp(id); }, 150); }},
     {label:'✉️ Email', cls:'btn-green', action:function(){ closeModal(); setTimeout(function(){ enviarLiquidacionEmail(id); }, 150); }}

@@ -6019,30 +6019,62 @@ function pgLiquidaciones(el) {
     var badge = liq.estado==='pagada' ? '<span class="badge badge-green">Pagada</span>' :
                 liq.estado==='revisar' ? '<span class="badge badge-amber">⚠️ A revisar</span>' :
                 '<span class="badge badge-gray">Borrador</span>';
+    var ultEnvio = liqUltimoEnvio(liq);
+    var medioLabel = {whatsapp:'WhatsApp', email:'Email', manual:'manual'};
+    var envioBadge = ultEnvio ?
+      '<span class="badge badge-green" title="'+h((medioLabel[ultEnvio.medio]||ultEnvio.medio)+' · '+ultEnvio.fecha.slice(0,10))+'">✓ Enviada</span>' :
+      '<span class="badge badge-gray">Sin enviar</span>';
     return '<tr>' +
       '<td style="font-weight:500">'+h(loc?loc.nombre:'—')+'</td>' +
       '<td style="font-size:12px">'+h(periodoLabel(liq.periodo))+'</td>' +
+      '<td style="font-size:12px">'+fmtPeso(liq.totalCobrado)+'</td>' +
       '<td style="font-size:12px;color:var(--text3)">'+fmtPeso(liq.totalComision)+'</td>' +
       '<td style="font-weight:600;color:var(--green)">'+fmtPeso(liq.totalNeto)+'</td>' +
       '<td>'+badge+'</td>' +
+      '<td>'+envioBadge+'</td>' +
       '<td style="white-space:nowrap">' +
       '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="verLiquidacion('+liq.id+')" title="Ver detalle">👁</button> ' +
       '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="descargarLiquidacionPDF('+liq.id+')" title="Descargar PDF">⬇</button> ' +
       '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="enviarLiquidacionWhatsApp('+liq.id+')" title="Enviar por WhatsApp">💬</button> ' +
       '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="enviarLiquidacionEmail('+liq.id+')" title="Enviar por email">✉️</button> ' +
+      (!ultEnvio ? '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="marcarEnviadaManual('+liq.id+')" title="Marcar como enviada por otro medio">✓</button> ' : '') +
       '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px;color:var(--red)" onclick="confirmDelLiquidacion('+liq.id+')" title="Eliminar">🗑</button>' +
       '</td></tr>';
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">Todavía no generaste ninguna liquidación</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Todavía no generaste ninguna liquidación</td></tr>';
 
   var locOpts = (DB.locadores||[]).map(function(l){ return '<option value="'+l.id+'">'+h(l.nombre)+'</option>'; }).join('');
   var hoy = new Date();
   var defaultPeriodo = hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
 
   // ── Resumen para la agencia ──
+  var cobradoHistorico = liqs.reduce(function(s,l){ return s+l.totalCobrado; }, 0);
   var comisionHistorica = liqs.reduce(function(s,l){ return s+l.totalComision; }, 0);
   var comisionEsteMes = liqs.filter(function(l){ return l.periodo===defaultPeriodo; }).reduce(function(s,l){ return s+l.totalComision; }, 0);
   var netoHistorico = liqs.reduce(function(s,l){ return s+l.totalNeto; }, 0);
   var pendRevisar = liqs.filter(function(l){ return l.estado==='revisar'; }).length;
+  var pendEnvio = liqs.filter(function(l){ return !liqEstaEnviada(l); }).length;
+
+  // ── Resumen por locador (enviadas/pendientes) ──
+  var porLocador = (DB.locadores||[]).map(function(loc) {
+    var suyas = liqs.filter(function(l){ return l.locadorId===loc.id; });
+    var enviadas = suyas.filter(liqEstaEnviada).length;
+    var ultima = suyas.slice().sort(function(a,b){ return b.periodo.localeCompare(a.periodo); })[0];
+    var ultEnvio = ultima ? liqUltimoEnvio(ultima) : null;
+    return {nombre: loc.nombre, total: suyas.length, enviadas: enviadas, pendientes: suyas.length-enviadas,
+            ultimoPeriodo: ultima ? periodoLabel(ultima.periodo) : '—',
+            ultimoEnvio: ultEnvio ? ultEnvio.fecha.slice(0,10) : '—'};
+  }).filter(function(r){ return r.total > 0; });
+
+  var porLocadorRows = porLocador.map(function(r) {
+    return '<tr>' +
+      '<td style="font-weight:500">'+h(r.nombre)+'</td>' +
+      '<td style="text-align:center">'+r.total+'</td>' +
+      '<td style="text-align:center;color:var(--green)">'+r.enviadas+'</td>' +
+      '<td style="text-align:center;'+(r.pendientes?'color:var(--amber);font-weight:600':'color:var(--text3)')+'">'+r.pendientes+'</td>' +
+      '<td style="font-size:12px;color:var(--text3)">'+h(r.ultimoPeriodo)+'</td>' +
+      '<td style="font-size:12px;color:var(--text3)">'+h(r.ultimoEnvio)+'</td>' +
+      '</tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:16px">Sin datos todavía</td></tr>';
 
   el.innerHTML =
     '<div class="page-header"><div><div class="page-title">Liquidaciones</div>' +
@@ -6050,10 +6082,12 @@ function pgLiquidaciones(el) {
     '<div class="page-content fade-in">' +
 
     '<div class="stats-grid" style="margin-bottom:20px">' +
+    '<div class="stat-card"><div class="stat-label">Cobrado a inquilinos</div><div class="stat-value">'+fmtPeso(cobradoHistorico)+'</div></div>' +
     '<div class="stat-card"><div class="stat-label">Comisión histórica</div><div class="stat-value" style="color:var(--accent-dark)">'+fmtPeso(comisionHistorica)+'</div></div>' +
     '<div class="stat-card"><div class="stat-label">Comisión '+h(periodoLabel(defaultPeriodo))+'</div><div class="stat-value" style="color:var(--accent-dark)">'+fmtPeso(comisionEsteMes)+'</div></div>' +
     '<div class="stat-card"><div class="stat-label">Total liquidado a propietarios</div><div class="stat-value" style="color:var(--green)">'+fmtPeso(netoHistorico)+'</div></div>' +
     '<div class="stat-card" style="border-left:3px solid '+(pendRevisar?'var(--amber)':'var(--border)')+'"><div class="stat-label">A revisar</div><div class="stat-value" style="color:'+(pendRevisar?'var(--amber)':'var(--text)')+'">'+pendRevisar+'</div></div>' +
+    '<div class="stat-card" style="border-left:3px solid '+(pendEnvio?'var(--amber)':'var(--border)')+'"><div class="stat-label">Pendientes de envío</div><div class="stat-value" style="color:'+(pendEnvio?'var(--amber)':'var(--text)')+'">'+pendEnvio+'</div></div>' +
     '</div>' +
 
     '<div class="card" style="margin-bottom:20px">' +
@@ -6065,7 +6099,13 @@ function pgLiquidaciones(el) {
     '<button class="btn btn-secondary" onclick="generarLiquidacionesMasivo()" title="Genera una liquidación borrador para todos los locadores con cobros o gastos en el período elegido">⚡ Generar todas (período elegido)</button>' +
     '</div></div>' +
     (DB.locadores&&DB.locadores.length ? '' : '<div style="background:var(--amber-light);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--amber)">Todavía no hay locadores cargados. Agregá uno en la sección Locadores.</div>') +
-    '<div class="table-wrap"><table><thead><tr><th>Locador</th><th>Período</th><th>Comisión</th><th>Neto</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
+
+    '<div class="card" style="margin-bottom:20px">' +
+    '<div class="card-header"><div class="card-title">Envíos por locador</div></div>' +
+    '<div class="table-wrap"><table><thead><tr><th>Locador</th><th style="text-align:center">Liquidaciones</th><th style="text-align:center">Enviadas</th><th style="text-align:center">Pendientes</th><th>Último período</th><th>Último envío</th></tr></thead><tbody>'+porLocadorRows+'</tbody></table></div>' +
+    '</div>' +
+
+    '<div class="table-wrap"><table><thead><tr><th>Locador</th><th>Período</th><th>Cobrado</th><th>Comisión</th><th>Neto</th><th>Estado</th><th>Envío</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
     '</div>';
 }
 
@@ -6234,7 +6274,8 @@ function guardarLiquidacion(locId, periodo, items, estado, extra) {
     totalCobrado: totalCobrado, totalComision: totalComision, totalGastos: totalGastos, totalNeto: totalNeto,
     estado: estado || 'borrador',
     fechaPago: (extra && extra.fechaPago) || null,
-    medioPago: (extra && extra.medioPago) || null
+    medioPago: (extra && extra.medioPago) || null,
+    envios: []
   };
   DB.liquidaciones.push(liq);
   if(silent) return liq;
@@ -6289,14 +6330,26 @@ function verLiquidacion(id) {
      ' · <span style="color:var(--text3)">Borrador</span>') +
     '</div>' +
     '<div class="table-wrap"><table><thead><tr><th>Inmueble</th><th style="text-align:right">Cobrado</th><th style="text-align:right">Comisión</th><th style="text-align:right">Gastos</th><th style="text-align:right">Neto</th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
-    '<div style="text-align:right;margin-top:14px;font-size:20px;font-weight:600;color:var(--green)">Total: '+fmtPeso(liq.totalNeto)+'</div>';
+    '<div style="display:flex;justify-content:flex-end;gap:24px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap">' +
+    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Cobrado a inquilinos</div><div style="font-size:15px;font-weight:500">'+fmtPeso(liq.totalCobrado)+'</div></div>' +
+    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Comisión</div><div style="font-size:15px;font-weight:500;color:var(--accent-dark)">'+fmtPeso(liq.totalComision)+'</div></div>' +
+    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Gastos</div><div style="font-size:15px;font-weight:500;color:var(--red)">'+fmtPeso(liq.totalGastos)+'</div></div>' +
+    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Neto a transferir</div><div style="font-size:20px;font-weight:600;color:var(--green)">'+fmtPeso(liq.totalNeto)+'</div></div>' +
+    '</div>' +
+    '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">' +
+    '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Historial de envío</div>' +
+    ((liq.envios&&liq.envios.length) ? liq.envios.map(function(e){
+      var medioLabel = {whatsapp:'WhatsApp', email:'Email', manual:'Registrado manualmente'};
+      return '<div style="font-size:12px;color:var(--text2);padding:3px 0">✓ '+h(medioLabel[e.medio]||e.medio)+' · '+h(e.fecha.slice(0,16).replace('T',' '))+'</div>';
+    }).join('') : '<div style="font-size:12px;color:var(--text3)">Todavía no se envió esta liquidación al propietario</div>') +
+    '</div>';
 
   var footer = modalFooter([
     {label:'🗑 Eliminar', cls:'btn-danger', action:function(){ closeModal(); setTimeout(function(){ confirmDelLiquidacion(id); }, 150); }},
     {label:'⬇ PDF', cls:'btn-secondary', action:function(){ descargarLiquidacionPDF(id); }},
     {label:'💬 WhatsApp', cls:'btn-secondary', action:function(){ closeModal(); setTimeout(function(){ enviarLiquidacionWhatsApp(id); }, 150); }},
     {label:'✉️ Email', cls:'btn-green', action:function(){ closeModal(); setTimeout(function(){ enviarLiquidacionEmail(id); }, 150); }}
-  ]);
+  ].concat(liqEstaEnviada(liq) ? [] : [{label:'✓ Marcar enviada', cls:'btn-secondary', action:function(){ marcarEnviadaManual(id); closeModal(); }}]));
   openModal('Liquidación #' + id, body, true, footer);
 }
 
@@ -6338,7 +6391,12 @@ function descargarLiquidacionPDF(id) {
     y += 7;
   });
 
-  y += 3; doc.setDrawColor(180); doc.line(14, y, 195, y); y += 10;
+  y += 3; doc.setDrawColor(180); doc.line(14, y, 195, y); y += 8;
+  doc.setFontSize(10); doc.setFont(undefined,'normal'); doc.setTextColor(80);
+  doc.text('Total cobrado a inquilinos: ' + fmtPeso(liq.totalCobrado), 14, y); y += 6;
+  doc.text('Total comisión de administración: ' + fmtPeso(liq.totalComision), 14, y); y += 6;
+  doc.text('Total gastos descontados: ' + fmtPeso(liq.totalGastos), 14, y); y += 10;
+  doc.setTextColor(20);
   doc.setFontSize(13); doc.setFont(undefined,'bold');
   doc.text('Total neto a transferir: ' + fmtPeso(liq.totalNeto), 14, y);
 
@@ -6360,6 +6418,29 @@ function mensajeLiquidacion(liq, loc) {
     'Saludos,\n' + (propietaria.nombre||'');
 }
 
+// ── Registro de envíos ───────────────────────────────────────────────
+function registrarEnvioLiquidacion(id, medio) {
+  var liq = (DB.liquidaciones||[]).find(function(l){ return l.id===id; }); if(!liq) return;
+  if(!liq.envios) liq.envios = [];
+  liq.envios.push({medio: medio, fecha: new Date().toISOString()});
+  saveDB();
+}
+
+function liqUltimoEnvio(liq) {
+  if(!liq.envios || !liq.envios.length) return null;
+  return liq.envios[liq.envios.length - 1];
+}
+
+function liqEstaEnviada(liq) {
+  return !!(liq.envios && liq.envios.length);
+}
+
+function marcarEnviadaManual(id) {
+  registrarEnvioLiquidacion(id, 'manual');
+  toast('Marcada como enviada','success');
+  if(PAGE==='liquidaciones') nav('liquidaciones');
+}
+
 function enviarLiquidacionWhatsApp(id) {
   var liq = (DB.liquidaciones||[]).find(function(l){ return l.id===id; }); if(!liq) return;
   var loc = getLoc(liq.locadorId);
@@ -6369,7 +6450,9 @@ function enviarLiquidacionWhatsApp(id) {
   abrirModalMensaje('Enviar liquidación por WhatsApp — ' + loc.nombre, msg, function(msgFinal) {
     descargarLiquidacionPDF(id);
     window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(msgFinal), '_blank');
-    toast('Se descargó el PDF — adjuntalo en el chat que se abrió', 'success');
+    registrarEnvioLiquidacion(id, 'whatsapp');
+    toast('Se descargó el PDF y se marcó como enviada — adjuntalo en el chat que se abrió', 'success');
+    if(PAGE==='liquidaciones') nav('liquidaciones');
   }, 'whatsapp');
 }
 
@@ -6382,9 +6465,12 @@ function enviarLiquidacionEmail(id) {
     descargarLiquidacionPDF(id);
     var asunto = encodeURIComponent('Liquidación ' + periodoLabel(liq.periodo));
     window.location.href = 'mailto:' + loc.email + '?subject=' + asunto + '&body=' + encodeURIComponent(msgFinal);
-    toast('Se descargó el PDF — adjuntalo en el email que se abrió', 'success');
+    registrarEnvioLiquidacion(id, 'email');
+    toast('Se descargó el PDF y se marcó como enviada — adjuntalo en el email que se abrió', 'success');
+    if(PAGE==='liquidaciones') nav('liquidaciones');
   }, 'email');
 }
+
 
 // ============================================================
 // INIT

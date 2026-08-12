@@ -56,28 +56,33 @@ docx/dist/index.cjs:
 
 </script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* ── Vibrant palette ── */
-  --bg:           #F2EEE8;
-  --surface:      #FDFCFA;
-  --surface2:     #EDE8E0;
-  --surface3:     #E2DBD0;
-  --border:       #D5CEC3;
-  --border2:      #BEB5A8;
+  /* ── Minimal neutro ── */
+  --bg:           #FAFAFA;
+  --surface:      #FFFFFF;
+  --surface2:     #F4F4F5;
+  --surface3:     #E4E4E7;
+  --border:       #E4E4E7;
+  --border2:      #D4D4D8;
 
-  --text:         #1A1612;
-  --text2:        #52493E;
-  --text3:        #8C8073;
+  --text:         #18181B;
+  --text2:        #52525B;
+  --text3:        #71717A;
 
-  /* Gold — richer */
-  --gold:         #C49A3C;
-  --gold-light:   #FBF3DC;
-  --gold-dark:    #8A6820;
-  --gold-mid:     #E0B860;
+  /* Acento único — índigo (reemplaza al dorado) */
+  --gold:         #4F46E5;
+  --gold-light:   #EEF2FF;
+  --gold-dark:    #3730A3;
+  --gold-mid:     #6366F1;
 
-  /* Vibrant accents */
+  /* --accent* — antes no estaban definidas (bug); ahora alias del acento único */
+  --accent:       #4F46E5;
+  --accent-light: #EEF2FF;
+  --accent-dark:  #3730A3;
+
+  /* Semánticos */
   --teal:         #0D9488;
   --teal-light:   #CCFBF1;
   --purple:       #7C3AED;
@@ -94,27 +99,27 @@ docx/dist/index.cjs:
   --red:          #DC2626;
   --red-light:    #FEE2E2;
 
-  /* Sidebar — deep dark */
-  --sb:           #0F0C09;
-  --sb2:          #1A1510;
-  --sb3:          #252018;
-  --sb-border:    #2E2820;
-  --sb-text:      #C8BFB0;
-  --sb-text2:     #7A7060;
-  --sb-gold:      #E0B860;
+  /* Sidebar — carbón neutro */
+  --sb:           #18181B;
+  --sb2:          #1F1F23;
+  --sb3:          #27272A;
+  --sb-border:    #2D2D31;
+  --sb-text:      #D4D4D8;
+  --sb-text2:     #8A8A93;
+  --sb-gold:      #818CF8;
 
-  --serif: 'Playfair Display', Georgia, serif;
+  --serif: 'Plus Jakarta Sans', system-ui, sans-serif;
   --sans:  'Plus Jakarta Sans', system-ui, sans-serif;
 
-  --radius:    12px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 
-  --shadow-xs: 0 1px 3px rgba(0,0,0,.06);
-  --shadow:    0 2px 8px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.06);
-  --shadow-xl: 0 20px 48px rgba(0,0,0,.18), 0 4px 12px rgba(0,0,0,.08);
-  --shadow-gold: 0 4px 20px rgba(196,154,60,.35);
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
+  --shadow:    0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+  --shadow-xl: 0 12px 32px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.04);
+  --shadow-gold: 0 4px 16px rgba(79,70,229,.25);
 
   --t: 0.18s cubic-bezier(.4,0,.2,1);
 }
@@ -142,21 +147,16 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
   border-bottom:1px solid var(--sb-border);
   position:relative; overflow:hidden;
 }
-.sidebar-logo::before {
-  content:''; position:absolute; top:-40px; right:-40px;
-  width:130px; height:130px;
-  background: radial-gradient(circle, rgba(196,154,60,.2) 0%, transparent 65%);
-  pointer-events:none;
-}
+.sidebar-logo::before { display:none; }
 .sidebar-logo .logo-mark {
   display:flex; align-items:center; gap:10px; margin-bottom:14px;
 }
 .sidebar-logo .logo-icon {
   width:38px; height:38px; border-radius:11px;
-  background: linear-gradient(135deg, #C49A3C, #E8C96A);
+  background: linear-gradient(135deg, #4F46E5, #6366F1);
   display:flex; align-items:center; justify-content:center;
   font-size:18px; flex-shrink:0;
-  box-shadow: 0 3px 12px rgba(196,154,60,.45);
+  box-shadow: 0 3px 12px rgba(79,70,229,.45);
 }
 .sidebar-logo h1 {
   font-family:var(--serif); font-size:19px; color:#F5EFE6;
@@ -164,8 +164,8 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 }
 .sidebar-logo .owner-block {
   padding:10px 12px;
-  background: linear-gradient(135deg, rgba(196,154,60,.18), rgba(196,154,60,.06));
-  border-radius:10px; border:1px solid rgba(196,154,60,.25);
+  background: linear-gradient(135deg, rgba(79,70,229,.18), rgba(79,70,229,.06));
+  border-radius:10px; border:1px solid rgba(79,70,229,.25);
 }
 .sidebar-logo .owner-label {
   font-size:9px; font-weight:700; letter-spacing:.12em;
@@ -192,16 +192,16 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
   border-color:rgba(255,255,255,.06);
 }
 .nav-item.active {
-  background: linear-gradient(135deg, rgba(196,154,60,.2), rgba(196,154,60,.08));
+  background: linear-gradient(135deg, rgba(79,70,229,.2), rgba(79,70,229,.08));
   color:var(--sb-gold); font-weight:500;
-  border-color:rgba(196,154,60,.25);
+  border-color:rgba(79,70,229,.25);
   box-shadow:0 2px 8px rgba(0,0,0,.2);
 }
 .nav-item.active::before {
   content:''; position:absolute; left:0; top:20%; bottom:20%;
   width:3px; border-radius:0 3px 3px 0;
-  background: linear-gradient(180deg, #E8C96A, #C49A3C);
-  box-shadow:0 0 8px rgba(196,154,60,.6);
+  background: linear-gradient(180deg, #6366F1, #4F46E5);
+  box-shadow:0 0 8px rgba(79,70,229,.6);
 }
 .nav-item svg { width:15px; height:15px; flex-shrink:0; opacity:.6; }
 .nav-item.active svg, .nav-item:hover svg { opacity:1; }
@@ -210,10 +210,10 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .user-pill { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
 .avatar {
   width:34px; height:34px; border-radius:50%;
-  background: linear-gradient(135deg, #C49A3C, #E8C96A);
+  background: linear-gradient(135deg, #4F46E5, #6366F1);
   display:flex; align-items:center; justify-content:center;
-  font-size:12px; font-weight:700; color:#1A1612; flex-shrink:0;
-  box-shadow:0 2px 8px rgba(196,154,60,.4);
+  font-size:12px; font-weight:700; color:#FFFFFF; flex-shrink:0;
+  box-shadow:0 2px 8px rgba(79,70,229,.4);
 }
 .user-name { font-size:12px; font-weight:600; color:var(--sb-text); }
 .user-role { font-size:10px; color:var(--sb-text2); margin-top:1px; }
@@ -243,20 +243,15 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .page-header {
   padding:22px 28px 18px;
   border-bottom:1px solid var(--border);
-  background: linear-gradient(180deg, var(--surface) 0%, rgba(242,238,232,.8) 100%);
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(244,244,245,.8) 100%);
   display:flex; align-items:flex-start; justify-content:space-between;
   gap:14px; flex-wrap:wrap;
   position:relative; overflow:hidden;
 }
-.page-header::before {
-  content:''; position:absolute; top:-60px; right:-60px;
-  width:200px; height:200px;
-  background: radial-gradient(circle, rgba(196,154,60,.08) 0%, transparent 65%);
-  pointer-events:none;
-}
+.page-header::before { display:none; }
 .page-title {
-  font-family:var(--serif); font-size:28px; color:var(--text);
-  letter-spacing:-.5px; font-weight:600;
+  font-family:var(--serif); font-size:26px; color:var(--text);
+  letter-spacing:-.2px; font-weight:600;
 }
 .page-subtitle { font-size:13px; color:var(--text3); margin-top:3px; }
 .page-content  { padding:22px 28px; flex:1; }
@@ -270,13 +265,13 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
   letter-spacing:-.01em; white-space:nowrap;
 }
 .btn-primary {
-  background: linear-gradient(135deg, #C49A3C, #E8C96A);
-  color:#1A1612;
+  background: linear-gradient(135deg, #4F46E5, #6366F1);
+  color:#FFFFFF;
   box-shadow: var(--shadow-gold);
 }
 .btn-primary:hover {
-  background: linear-gradient(135deg, #B08830, #D4B550);
-  box-shadow: 0 6px 24px rgba(196,154,60,.5);
+  background: linear-gradient(135deg, #4338CA, #4F46E5);
+  box-shadow: 0 6px 24px rgba(79,70,229,.5);
   transform:translateY(-1px);
 }
 .btn-primary:active { transform:translateY(0); }
@@ -330,7 +325,7 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
 .stat-card::after {
   content:''; position:absolute; top:-20px; right:-20px;
   width:80px; height:80px;
-  background:radial-gradient(circle, rgba(196,154,60,.08) 0%, transparent 70%);
+  background:radial-gradient(circle, rgba(79,70,229,.08) 0%, transparent 70%);
   pointer-events:none;
 }
 .stat-card:hover { box-shadow:var(--shadow-lg); transform:translateY(-2px); }
@@ -338,7 +333,7 @@ body { font-family:var(--sans); background:var(--bg); color:var(--text); font-si
   font-size:10px; font-weight:700; color:var(--text3);
   letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px;
 }
-.stat-value { font-family:var(--serif); font-size:30px; color:var(--text); letter-spacing:-.6px; }
+.stat-value { font-family:var(--serif); font-size:28px; color:var(--text); letter-spacing:-.3px; font-weight:600; }
 .stat-sub { font-size:12px; color:var(--text3); margin-top:5px; }
 .stat-up { color:var(--green); } .stat-down { color:var(--red); }
 
@@ -368,7 +363,7 @@ th {
 }
 td { padding:12px 14px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
 tr:last-child td { border-bottom:none; }
-tr:hover td { background:linear-gradient(90deg, rgba(196,154,60,.03), transparent); }
+tr:hover td { background:linear-gradient(90deg, rgba(79,70,229,.03), transparent); }
 
 /* ══ FORMS ════════════════════════════════════════════════════ */
 .form-grid   { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
@@ -387,7 +382,7 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus {
   border-color:var(--gold);
-  box-shadow:0 0 0 3px rgba(196,154,60,.15);
+  box-shadow:0 0 0 3px rgba(79,70,229,.15);
   background:#FFFDF7;
 }
 textarea { resize:vertical; min-height:80px; }
@@ -421,11 +416,7 @@ textarea { resize:vertical; min-height:80px; }
   background: linear-gradient(180deg, var(--surface), var(--surface2));
   position:relative; overflow:hidden;
 }
-.modal-header::before {
-  content:''; position:absolute; top:-30px; right:-30px;
-  width:120px; height:120px;
-  background:radial-gradient(circle, rgba(196,154,60,.1) 0%, transparent 65%);
-}
+.modal-header::before { display:none; }
 .modal-title { font-family:var(--serif); font-size:22px; color:var(--text); font-weight:600; }
 .modal-body   { padding:22px 26px; max-height:72vh; overflow-y:auto; }
 .modal-footer {
@@ -442,11 +433,11 @@ textarea { resize:vertical; min-height:80px; }
   border-bottom:2px solid transparent; margin-bottom:-1px;
   transition:all var(--t); border-radius:8px 8px 0 0;
 }
-.tab:hover { color:var(--text2); background:rgba(196,154,60,.05); }
+.tab:hover { color:var(--text2); background:rgba(79,70,229,.05); }
 .tab.active {
   color:var(--gold-dark); font-weight:700;
   border-bottom-color:var(--gold);
-  background: linear-gradient(180deg, rgba(196,154,60,.08), transparent);
+  background: linear-gradient(180deg, rgba(79,70,229,.08), transparent);
 }
 
 /* ══ TOAST ════════════════════════════════════════════════════ */
@@ -480,7 +471,7 @@ textarea { resize:vertical; min-height:80px; }
 /* ══ HIGHLIGHT BOX ════════════════════════════════════════════ */
 .highlight-box {
   background: linear-gradient(135deg, var(--gold-light), rgba(251,243,220,.5));
-  border:1.5px solid rgba(196,154,60,.35);
+  border:1.5px solid rgba(79,70,229,.35);
   border-radius:var(--radius); padding:14px 16px; margin-bottom:18px;
 }
 .highlight-box p { font-size:13px; color:var(--gold-dark); }
@@ -529,7 +520,7 @@ textarea { resize:vertical; min-height:80px; }
   font-size:12px; font-weight:700; flex-shrink:0; transition:all var(--t);
 }
 .step-circle.done   { background: linear-gradient(135deg, #059669, #10B981); color:white; box-shadow:0 2px 8px rgba(5,150,105,.4); }
-.step-circle.active { background: linear-gradient(135deg, #C49A3C, #E8C96A); color:#1A1612; box-shadow:var(--shadow-gold); }
+.step-circle.active { background: linear-gradient(135deg, #4F46E5, #6366F1); color:#FFFFFF; box-shadow:var(--shadow-gold); }
 .step-circle.pending { background:var(--surface2); color:var(--text3); border:1.5px solid var(--border2); }
 .step-label  { font-size:12px; font-weight:500; color:var(--text3); white-space:nowrap; }
 .step-label.active { color:var(--gold-dark); font-weight:700; }
@@ -586,7 +577,7 @@ textarea { resize:vertical; min-height:80px; }
   transition:all var(--t);
 }
 .filter-bar select:focus, .filter-bar input[type=date]:focus {
-  border-color:var(--gold); box-shadow:0 0 0 3px rgba(196,154,60,.12);
+  border-color:var(--gold); box-shadow:0 0 0 3px rgba(79,70,229,.12);
 }
 
 /* ══ FEAT CHIPS ═══════════════════════════════════════════════ */
@@ -597,7 +588,7 @@ textarea { resize:vertical; min-height:80px; }
   background:var(--surface);
 }
 .feat-chip:hover { border-color:var(--gold); background:var(--gold-light); transform:scale(1.02); }
-.feat-chip.on { border-color:var(--gold); background:var(--gold-light); box-shadow:0 0 0 3px rgba(196,154,60,.1); }
+.feat-chip.on { border-color:var(--gold); background:var(--gold-light); box-shadow:0 0 0 3px rgba(79,70,229,.1); }
 .feat-chip.on .feat-chip-label { color:var(--gold-dark); font-weight:600; }
 .feat-chip-icon  { font-size:16px; flex-shrink:0; }
 .feat-chip-label { font-size:12px; color:var(--text2); line-height:1.3; }
@@ -617,14 +608,14 @@ textarea { resize:vertical; min-height:80px; }
   transition:all var(--t); box-shadow:var(--shadow-xs);
 }
 .search-bar:focus-within {
-  border-color:var(--gold); box-shadow:0 0 0 3px rgba(196,154,60,.12);
+  border-color:var(--gold); box-shadow:0 0 0 3px rgba(79,70,229,.12);
 }
 .search-bar input { border:none; background:none; padding:0; font-size:13px; color:var(--text); outline:none; width:240px; }
 .search-bar svg { width:15px; height:15px; color:var(--text3); flex-shrink:0; }
 
 /* ══ CONTRACT EDITOR ══════════════════════════════════════════ */
-.ct-field:focus  { background:rgba(196,154,60,.18) !important; border-bottom-color:var(--gold-dark) !important; outline:none; }
-.ct-field:hover  { background:rgba(196,154,60,.1)  !important; }
+.ct-field:focus  { background:rgba(79,70,229,.18) !important; border-bottom-color:var(--gold-dark) !important; outline:none; }
+.ct-field:hover  { background:rgba(79,70,229,.1)  !important; }
 #contract-preview p { line-height:1.9; }
 
 /* ══ MISC ═════════════════════════════════════════════════════ */
@@ -761,6 +752,9 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
       <div class="nav-item" onclick="navAndClose('financiero')" id="nav-financiero">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Financiero
       </div>
+      <div class="nav-item" onclick="navAndClose('liquidaciones')" id="nav-liquidaciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>Liquidaciones
+      </div>
       <div class="nav-item" onclick="navAndClose('facturacion')" id="nav-facturacion">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>Facturación
       </div>
@@ -800,6 +794,7 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
   <button class="lb-btn" onclick="closeLB()" style="position:absolute;top:16px;right:16px;font-size:16px">&#10005;</button>
   <div id="lb-counter" style="position:absolute;bottom:16px;color:rgba(255,255,255,.6);font-size:13px"></div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 // ============================================================
 // DATA
@@ -833,7 +828,8 @@ var DB = {
   cobros: [],
   gastos: [],
   incidencias: [],
-  proveedores: []
+  proveedores: [],
+  liquidaciones: []
 };
 
 // ============================================================
@@ -858,7 +854,9 @@ function saveDB() {
       incidencias: DB.incidencias,
       proveedores: DB.proveedores || [],
       impuestos: DB.impuestos || [],
-      pagoImpuestos: DB.pagoImpuestos || []
+      pagoImpuestos: DB.pagoImpuestos || [],
+      migLocadorSRL: DB.migLocadorSRL || false,
+      liquidaciones: DB.liquidaciones || []
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch(e) {
@@ -876,7 +874,9 @@ function saveDB() {
           incidencias: DB.incidencias,
           proveedores: DB.proveedores || [],
           impuestos: DB.impuestos || [],
-          pagoImpuestos: DB.pagoImpuestos || []
+          pagoImpuestos: DB.pagoImpuestos || [],
+          migLocadorSRL: DB.migLocadorSRL || false,
+          liquidaciones: DB.liquidaciones || []
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data2));
         toast('Guardado sin fotos (espacio insuficiente)', '');
@@ -901,6 +901,8 @@ function loadDB() {
     if(data.proveedores)   DB.proveedores   = data.proveedores;
     if(data.impuestos)     DB.impuestos     = data.impuestos;
     if(data.pagoImpuestos) DB.pagoImpuestos = data.pagoImpuestos;
+    DB.migLocadorSRL = data.migLocadorSRL || false;
+    DB.liquidaciones = data.liquidaciones || [];
     return true;
   } catch(e) { console.warn('localStorage load failed:', e); return false; }
 }
@@ -1061,6 +1063,39 @@ function getProv(id) { return (DB.proveedores||[]).find(function(p){ return p.id
 function getLoc(id) { return (DB.locadores||[]).find(function(l){ return l.id===id; }); }
 function getDefaultLoc() { return (DB.locadores||[]).find(function(l){ return l.default; }) || (DB.locadores||[])[0] || {nombre:'Carolina Gerosa',cuit:'',domicilio:'',tel:'',email:''}; }
 
+// Propietario (locador) de un inmueble — vínculo directo inm.locadorId
+function getLocOfInm(inmId) { return getLoc((getInm(inmId)||{}).locadorId); }
+
+// Migración: si el inmueble no tiene locadorId asignado, lo completa a partir
+// del array legado locador.inmuebles[] (dato que ya existía pero el código nunca leía).
+function migrarLocadorPorInmueble() {
+  (DB.locadores||[]).forEach(function(loc) {
+    (loc.inmuebles||[]).forEach(function(inmId) {
+      var inm = getInm(inmId);
+      if(inm && (inm.locadorId===undefined || inm.locadorId===null)) inm.locadorId = loc.id;
+    });
+  });
+}
+
+// Migración puntual (corre una sola vez): los edificios del laboratorio
+// (25 de Mayo, San Martín, Av. Alvear) pasan a nombre de la SRL en vez
+// de Carolina Gerosa a título personal. Usa el nombre de la calle (no el
+// texto exacto) porque las direcciones ya fueron editadas con apodos de
+// inquilinos/locales (ej. "KINESIO Av. Alvear 948", "DTO A - Av. Alvear 939").
+function migrarLocadorSRL() {
+  if(DB.migLocadorSRL) return;
+  var srl = (DB.locadores||[]).find(function(l){ return /laboratorio/i.test(l.nombre||''); });
+  if(srl) {
+    var calles = ['25 de mayo','san martín','san martin','alvear'];
+    DB.inmuebles.forEach(function(inm){
+      var dirNorm = (inm.dir||'').toLowerCase();
+      if(calles.some(function(c){ return dirNorm.indexOf(c) > -1; })) inm.locadorId = srl.id;
+    });
+  }
+  DB.migLocadorSRL = true;
+  saveDB();
+}
+
 function nav(page) {
   PAGE = page;
   document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.remove('active'); });
@@ -1071,8 +1106,9 @@ function nav(page) {
 
 function renderPage() {
   var main = document.getElementById('main');
-  var pages = {dashboard:pgDashboard,alertas:pgAlertas,inmuebles:pgInmuebles,inquilinos:pgInquilinos,contratos:pgContratos,locadores:pgLocadores,mantenimiento:pgMantenimiento,proveedores:pgProveedores,financiero:pgFinanciero,facturacion:pgFacturacion,informes:pgInformes};
+  var pages = {dashboard:pgDashboard,alertas:pgAlertas,inmuebles:pgInmuebles,inquilinos:pgInquilinos,contratos:pgContratos,locadores:pgLocadores,mantenimiento:pgMantenimiento,proveedores:pgProveedores,financiero:pgFinanciero,facturacion:pgFacturacion,informes:pgInformes,liquidaciones:pgLiquidaciones};
   if(pages[PAGE]) pages[PAGE](main);
+  main.scrollTop = 0;
 }
 
 // ============================================================
@@ -1182,6 +1218,10 @@ function buildInmForm(inm) {
     '<div class="form-field"><label>Precio mensual ($)</label><input id="f-precio" type="number" placeholder="280000" value="' + h(p.precio||'') + '"></div>',
     '<div class="form-field"><label>Expensas aprox. ($)</label><input id="f-expensas" type="number" placeholder="45000" value="' + h(p.expensas||'') + '"></div>',
     '<div class="form-field"><label>Estado</label><select id="f-estado">' + estados.map(function(s){ return '<option' + (p.estado===s?' selected':'') + '>' + s + '</option>'; }).join('') + '</select></div>',
+    '<div class="form-field"><label>Locador (propietario)</label><select id="f-locador">' +
+      '<option value="">Sin asignar</option>' +
+      (DB.locadores||[]).map(function(l){ return '<option value="'+l.id+'"'+((p.locadorId===l.id)?' selected':'')+'>'+h(l.nombre)+'</option>'; }).join('') +
+    '</select></div>',
     '<div class="form-field full"><label>Descripción</label><textarea id="f-desc" placeholder="Descripción del inmueble...">' + h(p.desc||'') + '</textarea></div>',
     '</div>',
     '<div class="form-section-title">Características y equipamiento <span style="font-family:var(--sans);font-size:12px;font-weight:400;color:var(--text3)">Seleccioná todo lo que aplica</span></div>'
@@ -1204,6 +1244,7 @@ function readInmForm(wrap) {
     precio: parseInt(wrap.querySelector('#f-precio').value)||0,
     expensas: parseInt(wrap.querySelector('#f-expensas').value)||0,
     estado: wrap.querySelector('#f-estado').value,
+    locadorId: parseInt(wrap.querySelector('#f-locador').value) || null,
     desc: wrap.querySelector('#f-desc').value.trim(),
     feats: getSelectedFeats(wrap)
   };
@@ -1308,16 +1349,30 @@ function closeLB() { document.getElementById('lightbox').style.display = 'none';
 // ─────────────────────────────────────────────────────────────────
 var FILTER = {
   inmuebleId: 'todos',
+  locadorId: 'todos',
   periodo: 'todo',      // 'todo' | 'este_mes' | 'este_anio' | 'personalizado'
   desde: '',
   hasta: '',
 };
 
+// true si el inmueble pertenece al locador actualmente seleccionado en el filtro (o si el filtro está en "todos")
+function inmCoincideLocador(inmId) {
+  if(FILTER.locadorId === 'todos') return true;
+  var inm = getInm(inmId);
+  return !!inm && inm.locadorId === parseInt(FILTER.locadorId);
+}
+
 function filterLabel() {
-  if(FILTER.periodo==='este_mes')  return 'Este mes';
-  if(FILTER.periodo==='este_anio') return 'Este año';
-  if(FILTER.periodo==='personalizado') return (FILTER.desde||'?') + ' → ' + (FILTER.hasta||'?');
-  return 'Todo el período';
+  var base;
+  if(FILTER.periodo==='este_mes')  base = 'Este mes';
+  else if(FILTER.periodo==='este_anio') base = 'Este año';
+  else if(FILTER.periodo==='personalizado') base = (FILTER.desde||'?') + ' → ' + (FILTER.hasta||'?');
+  else base = 'Todo el período';
+  if(FILTER.locadorId !== 'todos') {
+    var loc = getLoc(parseInt(FILTER.locadorId));
+    if(loc) base += '  ·  ' + loc.nombre;
+  }
+  return base;
 }
 
 function cobrosFiltered() {
@@ -1335,10 +1390,11 @@ function cobrosFiltered() {
         var d = c.vence||c.fechaPago||'';
         return d >= FILTER.desde && d <= FILTER.hasta;
       }
-      return FILTER.inmuebleId === 'todos'; // only show in "all" filter
+      return FILTER.inmuebleId === 'todos' && FILTER.locadorId === 'todos'; // only show in "all" filter
     }
     if(!ct) return false;
     if(FILTER.inmuebleId !== 'todos' && ct.inmId !== parseInt(FILTER.inmuebleId)) return false;
+    if(!inmCoincideLocador(ct.inmId)) return false;
     if(FILTER.periodo === 'este_mes') {
       var hoy = new Date(); var mes = String(hoy.getMonth()+1).padStart(2,'0'); var anio = hoy.getFullYear();
       var tag = anio + '-' + mes;
@@ -1358,6 +1414,7 @@ function cobrosFiltered() {
 function gastosFiltered() {
   return DB.gastos.filter(function(g) {
     if(FILTER.inmuebleId !== 'todos' && g.inmId !== parseInt(FILTER.inmuebleId)) return false;
+    if(!inmCoincideLocador(g.inmId)) return false;
     if(FILTER.periodo === 'este_mes') {
       var hoy = new Date(); var mes = String(hoy.getMonth()+1).padStart(2,'0'); var anio = hoy.getFullYear();
       return (g.fecha||'').startsWith(anio + '-' + mes);
@@ -1379,6 +1436,11 @@ function buildFilterBar(page) {
       return '<option value="'+p.id+'"'+(FILTER.inmuebleId==p.id?' selected':'')+'>'+h(p.dir.split(',')[0])+'</option>';
     }).join('');
 
+  var locOpts = '<option value="todos">Todos los locadores</option>' +
+    (DB.locadores||[]).map(function(l){
+      return '<option value="'+l.id+'"'+(FILTER.locadorId==l.id?' selected':'')+'>'+h(l.nombre)+'</option>';
+    }).join('');
+
   var perOpts = [['todo','Todo el período'],['este_mes','Este mes'],['este_anio','Este año'],['personalizado','Personalizado']].map(function(opt){
     return '<option value="'+opt[0]+'"'+(FILTER.periodo===opt[0]?' selected':'')+'>'+opt[1]+'</option>';
   }).join('');
@@ -1388,6 +1450,7 @@ function buildFilterBar(page) {
   return '<div class="filter-bar">' +
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--text3)"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>' +
     '<span style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Filtros</span>' +
+    '<select style="font-size:13px;border:1px solid var(--border2);border-radius:8px;padding:5px 10px;background:var(--surface);color:var(--text);outline:none" onchange="FILTER.locadorId=this.value;nav(currentFilterPage)">' + locOpts + '</select>' +
     '<select style="font-size:13px;border:1px solid var(--border2);border-radius:8px;padding:5px 10px;background:var(--surface);color:var(--text);outline:none" onchange="FILTER.inmuebleId=this.value;nav(currentFilterPage)">' + inmOpts + '</select>' +
     '<select style="font-size:13px;border:1px solid var(--border2);border-radius:8px;padding:5px 10px;background:var(--surface);color:var(--text);outline:none" onchange="FILTER.periodo=this.value;nav(currentFilterPage)">' + perOpts + '</select>' +
     '<div id="custom-dates" style="'+custom+';align-items:center;gap:6px">' +
@@ -1395,8 +1458,8 @@ function buildFilterBar(page) {
     '<span style="font-size:12px;color:var(--text3)">→</span>' +
     '<input type="date" value="'+FILTER.hasta+'" style="font-size:12px;border:1px solid var(--border2);border-radius:8px;padding:5px 8px" onchange="FILTER.hasta=this.value;nav(currentFilterPage)">' +
     '</div>' +
-    (FILTER.inmuebleId!=='todos'||FILTER.periodo!=='todo' ?
-      '<button class="btn btn-ghost" style="font-size:12px;color:var(--red)" onclick="FILTER.inmuebleId=&apos;todos&apos;;FILTER.periodo=&apos;todo&apos;;FILTER.desde=&apos;&apos;;FILTER.hasta=&apos;&apos;;nav(currentFilterPage)">&#10005; Limpiar filtros</button>' : '') +
+    (FILTER.inmuebleId!=='todos'||FILTER.locadorId!=='todos'||FILTER.periodo!=='todo' ?
+      '<button class="btn btn-ghost" style="font-size:12px;color:var(--red)" onclick="FILTER.inmuebleId=&apos;todos&apos;;FILTER.locadorId=&apos;todos&apos;;FILTER.periodo=&apos;todo&apos;;FILTER.desde=&apos;&apos;;FILTER.hasta=&apos;&apos;;nav(currentFilterPage)">&#10005; Limpiar filtros</button>' : '') +
     '<span style="margin-left:auto;font-size:12px;color:var(--text3)">'+filterLabel()+'</span>' +
     '</div>';
 }
@@ -1938,6 +2001,7 @@ function abrirModalMensaje(titulo, msg, onEnviar, modo) {
     '<textarea id="alerta-msg" style="min-height:220px;font-size:12px;line-height:1.7;font-family:monospace">'+h(msg)+'</textarea>' +
     '</div>' +
     (modo==='whatsapp' ? '<div style="background:var(--teal-light);border-radius:var(--radius);padding:10px 14px;margin-top:10px;font-size:12px;color:var(--teal)">💬 Se abrirá WhatsApp Web con este mensaje prellenado.</div>' :
+     modo==='email' ? '<div style="background:var(--blue-light);border-radius:var(--radius);padding:10px 14px;margin-top:10px;font-size:12px;color:var(--blue)">✉️ Se abrirá tu cliente de email con este mensaje prellenado.</div>' :
      '<div style="background:var(--blue-light);border-radius:var(--radius);padding:10px 14px;margin-top:10px;font-size:12px;color:var(--blue)">📋 El mensaje se copiará al portapapeles para pegarlo donde necesites.</div>');
 
   var btnLabel = modo==='whatsapp' ? '💬 Abrir WhatsApp' : modo==='email' ? '✉️ Abrir email' : '📋 Copiar mensaje';
@@ -1967,18 +2031,20 @@ function updateAlertaBadge() {
 function pgDashboard(el) {
   var cobros  = cobrosFiltered();
   var gastos2 = gastosFiltered();
+  var inmuebles2 = FILTER.locadorId==='todos' ? DB.inmuebles : DB.inmuebles.filter(function(i){ return i.locadorId===parseInt(FILTER.locadorId); });
+  var incidencias2 = FILTER.locadorId==='todos' ? DB.incidencias : DB.incidencias.filter(function(i){ return inmCoincideLocador(i.inmId); });
 
   var ingresos  = cobros.filter(function(c){return c.estado==='cobrado';}).reduce(function(s,c){return s+c.monto;},0);
   var pendiente = cobros.filter(function(c){return c.estado==='pendiente';}).reduce(function(s,c){return s+c.monto;},0);
   var gastosTot = gastos2.reduce(function(s,g){return s+g.monto;},0);
   var resultado = ingresos - gastosTot;
-  var alquilados  = DB.inmuebles.filter(function(i){return i.estado==='alquilado';}).length;
-  var disponibles = DB.inmuebles.filter(function(i){return i.estado==='disponible';}).length;
-  var ocupacion   = DB.inmuebles.length ? Math.round(alquilados/DB.inmuebles.length*100) : 0;
-  var incAbiertas = DB.incidencias.filter(function(i){return i.estado!=='resuelto';}).length;
+  var alquilados  = inmuebles2.filter(function(i){return i.estado==='alquilado';}).length;
+  var disponibles = inmuebles2.filter(function(i){return i.estado==='disponible';}).length;
+  var ocupacion   = inmuebles2.length ? Math.round(alquilados/inmuebles2.length*100) : 0;
+  var incAbiertas = incidencias2.filter(function(i){return i.estado!=='resuelto';}).length;
 
   // Cobros por inmueble (for mini chart)
-  var cobradoPorInm = DB.inmuebles.map(function(p){
+  var cobradoPorInm = inmuebles2.map(function(p){
     // Via contract
     var viaContrato = cobros.filter(function(c){
       var ct=getCt(c.ctId); return ct && ct.inmId===p.id && c.estado==='cobrado';
@@ -2001,7 +2067,7 @@ function pgDashboard(el) {
       '<span style="font-size:11px;color:var(--accent-dark)">vence '+h(c.vence||'—')+'</span></div></div>';
   }).join('') || '<div style="font-size:13px;color:var(--text3);padding:12px 0">Sin cobros pendientes ✓</div>';
 
-  var incRows = DB.incidencias.filter(function(i){return i.estado!=='resuelto';}).map(function(inc) {
+  var incRows = incidencias2.filter(function(i){return i.estado!=='resuelto';}).map(function(inc) {
     var inm2=getInm(inc.inmId);
     return '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">' +
       '<span class="dot '+(inc.prio==='alta'?'dot-red':'dot-amber')+'" style="margin-top:5px"></span>' +
@@ -2011,7 +2077,7 @@ function pgDashboard(el) {
   }).join('') || '<div style="font-size:13px;color:var(--text3);padding:12px 0">Sin incidencias abiertas ✓</div>';
 
   // Ocupación donut via CSS
-  var dispCards = DB.inmuebles.filter(function(i){return i.estado==='disponible';});
+  var dispCards = inmuebles2.filter(function(i){return i.estado==='disponible';});
 
   el.innerHTML =
     '<div class="page-header"><div><div class="page-title">Dashboard</div>' +
@@ -2022,7 +2088,7 @@ function pgDashboard(el) {
     // KPI row
     '<div class="stats-grid">' +
     '<div class="stat-card"><div class="stat-label">Inmuebles</div>' +
-    '<div class="stat-value">'+DB.inmuebles.length+'</div>' +
+    '<div class="stat-value">'+inmuebles2.length+'</div>' +
     '<div class="stat-sub">'+alquilados+' alquilados · '+disponibles+' disponibles</div></div>' +
     '<div class="stat-card"><div class="stat-label">Ocupación</div>' +
     '<div class="stat-value" style="color:var(--accent-dark)">'+ocupacion+'%</div>' +
@@ -2052,9 +2118,9 @@ function pgDashboard(el) {
     '</div>' +
 
     // Ingresos por inmueble
-    (DB.inmuebles.length ? '<div class="card"><div class="card-header"><div class="card-title">Ingresos cobrados por inmueble</div></div>' +
+    (inmuebles2.length ? '<div class="card"><div class="card-header"><div class="card-title">Ingresos cobrados por inmueble</div></div>' +
     '<div style="display:flex;flex-direction:column;gap:8px">' +
-    DB.inmuebles.map(function(p,i){
+    inmuebles2.map(function(p,i){
       var val = cobradoPorInm[i];
       var maxVal = Math.max.apply(null,cobradoPorInm)||1;
       return '<div style="display:flex;align-items:center;gap:12px">' +
@@ -2077,6 +2143,7 @@ function pgDashboard(el) {
 // PAGE: INMUEBLES
 // ============================================================
 var FILTRO_ESTADO = 'todos';
+var FILTRO_LOCADOR = 'todos';
 
 function propertyCardHTML(p) {
   var statusMap = {alquilado:'badge-green',disponible:'badge-amber',mantenimiento:'badge-gray'};
@@ -2098,14 +2165,17 @@ function propertyCardHTML(p) {
 }
 
 function pgInmuebles(el) {
+  var locOpts = '<option value="todos">Todos los locadores</option>' +
+    (DB.locadores||[]).map(function(l){ return '<option value="'+l.id+'"'+(FILTRO_LOCADOR==l.id?' selected':'')+'>'+h(l.nombre)+'</option>'; }).join('');
   el.innerHTML = '<div class="page-header">' +
     '<div><div class="page-title">Cartera de inmuebles</div><div class="page-subtitle">' + DB.inmuebles.length + ' propiedades en gestión</div></div>' +
-    '<div style="display:flex;gap:8px">' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+    '<select style="font-size:13px;border:1px solid var(--border2);border-radius:8px;padding:0 10px;background:var(--surface);color:var(--text)" onchange="FILTRO_LOCADOR=this.value;renderFiltros();refreshGrid()">' + locOpts + '</select>' +
     '<div class="search-bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" placeholder="Buscar dirección o barrio…" oninput="filterInm(this.value)"></div>' +
     '<button class="btn btn-primary" onclick="openAddInm()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar inmueble</button>' +
     '</div></div>' +
     '<div class="page-content fade-in">' +
-    '<div style="display:flex;gap:8px;margin-bottom:18px" id="filtros-estado"></div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap" id="filtros-estado"></div>' +
     '<div class="property-grid" id="inm-grid"></div>' +
     '</div>';
   renderFiltros();
@@ -2115,9 +2185,12 @@ function pgInmuebles(el) {
 function renderFiltros() {
   var container = document.getElementById('filtros-estado'); if(!container) return;
   container.innerHTML = '';
+  var base = FILTRO_LOCADOR==='todos' ? DB.inmuebles : DB.inmuebles.filter(function(p){ return p.locadorId===parseInt(FILTRO_LOCADOR); });
+  var labels = {todos:'Todos',disponible:'Disponible',alquilado:'Alquilado',mantenimiento:'Mantenimiento'};
   ['todos','disponible','alquilado','mantenimiento'].forEach(function(s) {
+    var count = s==='todos' ? base.length : base.filter(function(p){ return p.estado===s; }).length;
     var btn = document.createElement('button');
-    btn.className = 'btn btn-ghost'; btn.textContent = s.charAt(0).toUpperCase()+s.slice(1);
+    btn.className = 'btn btn-ghost'; btn.textContent = labels[s] + ' (' + count + ')';
     if(s === FILTRO_ESTADO) { btn.style.background='var(--surface2)'; btn.style.color='var(--text)'; btn.style.borderColor='var(--border2)'; }
     btn.onclick = function() { FILTRO_ESTADO = s; renderFiltros(); refreshGrid(); };
     container.appendChild(btn);
@@ -2127,6 +2200,7 @@ function renderFiltros() {
 function refreshGrid(query) {
   var grid = document.getElementById('inm-grid'); if(!grid) return;
   var list = DB.inmuebles;
+  if(FILTRO_LOCADOR !== 'todos') list = list.filter(function(p){ return p.locadorId === parseInt(FILTRO_LOCADOR); });
   if(FILTRO_ESTADO !== 'todos') list = list.filter(function(p){ return p.estado === FILTRO_ESTADO; });
   if(query) { var q = query.toLowerCase(); list = list.filter(function(p){ return p.dir.toLowerCase().indexOf(q)>-1 || p.barrio.toLowerCase().indexOf(q)>-1; }); }
   grid.innerHTML = list.map(propertyCardHTML).join('');
@@ -2683,6 +2757,22 @@ function openRegistrarPagoLibre(inmId) {
   openModal('Registrar pago libre',bodyEl,false,footer);
 }
 
+
+function openAddInm() {
+  var formWrap = buildInmForm({});
+  var footer = modalFooter([{label:'Guardar inmueble',cls:'btn-green',action:function(){
+    var data = readInmForm(formWrap);
+    if(!data.dir){ toast('Ingresá la dirección','error'); return; }
+    var newId = DB.nextId || (DB.inmuebles.length ? Math.max.apply(null, DB.inmuebles.map(function(p){return p.id;}))+1 : 1);
+    data.id = newId; data.fotos = [];
+    DB.inmuebles.push(data);
+    DB.nextId = newId + 1;
+    closeModal(); saveDB();
+    if(PAGE==='inmuebles') nav('inmuebles'); else refreshGrid();
+    toast('Inmueble agregado','success');
+  }}]);
+  openModal('Nuevo inmueble', formWrap, true, footer);
+}
 
 function openEditInm(id) {
   var p = getInm(id); if(!p) return;
@@ -4179,6 +4269,8 @@ function openAddLocador(prefillNombre) {
     '<input id="nl-email" type="email" placeholder="correo@dominio.com"></div>' +
     '<div class="form-field full"><label>CBU / Alias bancario</label>' +
     '<input id="nl-cbu" type="text" placeholder="Para cobros por transferencia"></div>' +
+    '<div class="form-field"><label>Comisión de administración (%)</label>' +
+    '<input id="nl-comision" type="number" min="0" max="100" step="0.5" placeholder="10" value=""></div>' +
     '<div class="form-field full"><label style="display:flex;align-items:center;gap:8px">' +
     '<input id="nl-default" type="checkbox"> Establecer como locador principal</label></div>';
 
@@ -4197,6 +4289,7 @@ function openAddLocador(prefillNombre) {
         domicilio: document.getElementById('nl-dom').value.trim(),
         email: document.getElementById('nl-email').value.trim(),
         cbu:  document.getElementById('nl-cbu').value.trim(),
+        comisionDefault: parseFloat(document.getElementById('nl-comision').value) || 0,
         default: isDefault
       });
       saveDB();
@@ -4225,6 +4318,8 @@ function openEditLocador(id) {
     '<input id="el-email" type="email" value="'+h(l.email||'')+'"></div>' +
     '<div class="form-field full"><label>CBU / Alias</label>' +
     '<input id="el-cbu" type="text" value="'+h(l.cbu||'')+'"></div>' +
+    '<div class="form-field"><label>Comisión de administración (%)</label>' +
+    '<input id="el-comision" type="number" min="0" max="100" step="0.5" value="'+(l.comisionDefault||0)+'"></div>' +
     '<div class="form-field full"><label style="display:flex;align-items:center;gap:8px">' +
     '<input id="el-default" type="checkbox"'+(l.default?' checked':'')+'>Locador principal</label></div>';
 
@@ -4241,6 +4336,7 @@ function openEditLocador(id) {
       l.domicilio = document.getElementById('el-dom').value.trim();
       l.email  = document.getElementById('el-email').value.trim();
       l.cbu    = document.getElementById('el-cbu').value.trim();
+      l.comisionDefault = parseFloat(document.getElementById('el-comision').value) || 0;
       l.default = isDefault;
       saveDB(); closeModal(); nav('locadores');
       toast('Locador actualizado','success');
@@ -5861,10 +5957,340 @@ function navAndClose(page) {
 }
 
 // ============================================================
+// PAGE: LIQUIDACIONES
+// ============================================================
+function periodoLabel(periodo) {
+  var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var partes = (periodo||'').split('-'); var anio = partes[0]; var mes = parseInt(partes[1],10);
+  return (meses[mes-1]||'') + ' ' + anio;
+}
+
+// Junta, por cada inmueble del locador, lo cobrado en el período y los gastos candidatos a descontar
+function liquidacionArmarItems(locadorId, periodo) {
+  var loc = getLoc(locadorId);
+  var inms = DB.inmuebles.filter(function(i){ return i.locadorId === locadorId; });
+  return inms.map(function(inm) {
+    var cobrosInm = DB.cobros.filter(function(c) {
+      if(c.estado !== 'cobrado') return false;
+      var ct = getCt(c.ctId);
+      if(!ct || ct.inmId !== inm.id) return false;
+      var fechaRef = c.fechaPago || c.vence || '';
+      return fechaRef.indexOf(periodo) === 0;
+    });
+    var cobrado = cobrosInm.reduce(function(s,c){ return s+c.monto; }, 0);
+    var gastosInm = DB.gastos.filter(function(g){ return g.inmId===inm.id && (g.fecha||'').indexOf(periodo)===0; });
+    return {
+      inmId: inm.id,
+      dir: inm.dir,
+      cobrado: cobrado,
+      comisionPct: (loc && loc.comisionDefault) || 0,
+      gastosDisponibles: gastosInm.map(function(g){ return {id:g.id, concepto:g.concepto, monto:g.monto, incluido:true}; })
+    };
+  });
+}
+
+function liqItemNeto(item) {
+  var comision = Math.round(item.cobrado * ((item.comisionPct||0)/100));
+  var gastos = item.gastosDisponibles.filter(function(g){ return g.incluido; }).reduce(function(s,g){ return s+g.monto; }, 0);
+  return item.cobrado - comision - gastos;
+}
+
+function pgLiquidaciones(el) {
+  var rows = (DB.liquidaciones||[]).slice().sort(function(a,b){ return (b.periodo+b.id).localeCompare(a.periodo+a.id); }).map(function(liq) {
+    var loc = getLoc(liq.locadorId);
+    return '<tr>' +
+      '<td style="font-weight:500">'+h(loc?loc.nombre:'—')+'</td>' +
+      '<td style="font-size:12px">'+h(periodoLabel(liq.periodo))+'</td>' +
+      '<td style="font-weight:600;color:var(--green)">'+fmtPeso(liq.totalNeto)+'</td>' +
+      '<td>'+(liq.estado==='pagada' ? '<span class="badge badge-green">Pagada</span>' : '<span class="badge badge-gray">Borrador</span>')+'</td>' +
+      '<td style="white-space:nowrap">' +
+      '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="verLiquidacion('+liq.id+')" title="Ver detalle">👁</button> ' +
+      '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="descargarLiquidacionPDF('+liq.id+')" title="Descargar PDF">⬇</button> ' +
+      '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="enviarLiquidacionWhatsApp('+liq.id+')" title="Enviar por WhatsApp">💬</button> ' +
+      '<button class="btn btn-ghost" style="font-size:11px;padding:5px 8px" onclick="enviarLiquidacionEmail('+liq.id+')" title="Enviar por email">✉️</button>' +
+      '</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Todavía no generaste ninguna liquidación</td></tr>';
+
+  var locOpts = (DB.locadores||[]).map(function(l){ return '<option value="'+l.id+'">'+h(l.nombre)+'</option>'; }).join('');
+  var hoy = new Date();
+  var defaultPeriodo = hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
+
+  el.innerHTML =
+    '<div class="page-header"><div><div class="page-title">Liquidaciones</div>' +
+    '<div class="page-subtitle">Rendición mensual a cada propietario</div></div></div>' +
+    '<div class="page-content fade-in">' +
+    '<div class="card" style="margin-bottom:20px">' +
+    '<div class="card-header"><div class="card-title">Nueva liquidación</div></div>' +
+    '<div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">' +
+    '<div class="form-field" style="margin:0;min-width:200px"><label>Locador</label><select id="liq-locador">'+locOpts+'</select></div>' +
+    '<div class="form-field" style="margin:0"><label>Período</label><input id="liq-periodo" type="month" value="'+defaultPeriodo+'"></div>' +
+    '<button class="btn btn-primary" onclick="abrirGeneracionLiquidacion()">Generar</button>' +
+    '</div></div>' +
+    (DB.locadores&&DB.locadores.length ? '' : '<div style="background:var(--amber-light);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--amber)">Todavía no hay locadores cargados. Agregá uno en la sección Locadores.</div>') +
+    '<div class="table-wrap"><table><thead><tr><th>Locador</th><th>Período</th><th>Neto</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
+    '</div>';
+}
+
+function abrirGeneracionLiquidacion() {
+  var locSel = document.getElementById('liq-locador');
+  var perSel = document.getElementById('liq-periodo');
+  if(!locSel || !locSel.value) { toast('No hay locadores para elegir','error'); return; }
+  var locId = parseInt(locSel.value);
+  var periodo = perSel.value;
+  if(!periodo) { toast('Elegí un período','error'); return; }
+  var loc = getLoc(locId);
+  var items = liquidacionArmarItems(locId, periodo);
+  if(!items.length) { toast('Ese locador no tiene inmuebles asignados','error'); return; }
+
+  var body = document.createElement('div');
+  var header = document.createElement('div');
+  header.style.cssText = 'margin-bottom:14px;font-size:13px;color:var(--text3)';
+  header.textContent = loc.nombre + ' · ' + periodoLabel(periodo);
+  body.appendChild(header);
+
+  var itemsWrap = document.createElement('div');
+  body.appendChild(itemsWrap);
+
+  var totalRow = document.createElement('div');
+  totalRow.style.cssText = 'border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;justify-content:space-between;align-items:center';
+  totalRow.innerHTML = '<div style="font-size:13px;color:var(--text3)">Total neto a transferir</div><div id="liq-total-neto" style="font-size:24px;font-weight:600;color:var(--green)"></div>';
+  body.appendChild(totalRow);
+
+  function recalcTotal() {
+    var total = items.reduce(function(s,it){ return s + liqItemNeto(it); }, 0);
+    var totalEl = body.querySelector('#liq-total-neto');
+    totalEl.textContent = fmtPeso(total);
+    totalEl.style.color = total >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+
+  items.forEach(function(item) { itemsWrap.appendChild(buildLiqItemRow(item, recalcTotal)); });
+  recalcTotal();
+
+  var footer = modalFooter([
+    {label:'Guardar borrador', cls:'btn-secondary', action:function(){ guardarLiquidacion(locId, periodo, items, 'borrador'); }},
+    {label:'Confirmar y marcar pagada', cls:'btn-green', action:function(){ abrirConfirmarPagoLiquidacion(locId, periodo, items); }}
+  ]);
+  openModal('Liquidación · ' + loc.nombre, body, true, footer);
+}
+
+function buildLiqItemRow(item, onChange) {
+  var row = document.createElement('div');
+  row.className = 'card';
+  row.style.marginBottom = '10px';
+
+  var gastosHtml = item.gastosDisponibles.length ?
+    item.gastosDisponibles.map(function(g,gi){
+      return '<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0">' +
+        '<input type="checkbox" checked data-gasto-idx="'+gi+'"> ' + h(g.concepto) + ' — ' + fmtPeso(g.monto) +
+        '</label>';
+    }).join('') :
+    '<div style="font-size:12px;color:var(--text3)">Sin gastos registrados este período</div>';
+
+  row.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+    '<div style="font-weight:500;font-size:14px">'+h(item.dir.split(',')[0])+'</div>' +
+    '<div style="font-size:13px;color:var(--green);font-weight:500">Cobrado: '+fmtPeso(item.cobrado)+'</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">' +
+    '<div class="form-field" style="margin:0;width:110px"><label style="font-size:11px">Comisión %</label>' +
+    '<input type="number" min="0" max="100" step="0.5" value="'+item.comisionPct+'" data-comision-input></div>' +
+    '<div style="flex:1;min-width:220px"><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Gastos a descontar</label>'+gastosHtml+'</div>' +
+    '<div style="text-align:right;min-width:110px"><label style="font-size:11px;color:var(--text3);display:block">Neto</label>' +
+    '<div class="liq-item-neto" style="font-size:16px;font-weight:600"></div></div>' +
+    '</div>';
+
+  var comisionInput = row.querySelector('[data-comision-input]');
+  var checkboxes = row.querySelectorAll('[data-gasto-idx]');
+  var netoEl = row.querySelector('.liq-item-neto');
+
+  function update() {
+    item.comisionPct = parseFloat(comisionInput.value) || 0;
+    checkboxes.forEach(function(cb) {
+      var gi = parseInt(cb.getAttribute('data-gasto-idx'));
+      item.gastosDisponibles[gi].incluido = cb.checked;
+    });
+    var neto = liqItemNeto(item);
+    netoEl.textContent = fmtPeso(neto);
+    netoEl.style.color = neto >= 0 ? 'var(--green)' : 'var(--red)';
+    if(onChange) onChange();
+  }
+  comisionInput.addEventListener('input', update);
+  checkboxes.forEach(function(cb){ cb.addEventListener('change', update); });
+  update();
+
+  return row;
+}
+
+function abrirConfirmarPagoLiquidacion(locId, periodo, items) {
+  var body = document.createElement('div');
+  body.className = 'form-grid';
+  body.innerHTML =
+    '<div class="form-field"><label>Fecha de pago</label><input id="liqpago-fecha" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div>' +
+    '<div class="form-field"><label>Medio de pago</label><input id="liqpago-medio" type="text" placeholder="Transferencia bancaria"></div>';
+  var footer = modalFooter([{
+    label: 'Confirmar liquidación', cls: 'btn-green',
+    action: function() {
+      var fechaPago = document.getElementById('liqpago-fecha').value;
+      var medioPago = document.getElementById('liqpago-medio').value.trim();
+      guardarLiquidacion(locId, periodo, items, 'pagada', {fechaPago:fechaPago, medioPago:medioPago});
+    }
+  }]);
+  openModal('Confirmar pago al propietario', body, false, footer);
+}
+
+function guardarLiquidacion(locId, periodo, items, estado, extra) {
+  var totalCobrado=0, totalComision=0, totalGastos=0, totalNeto=0;
+  var itemsOut = items.map(function(item) {
+    var comision = Math.round(item.cobrado * ((item.comisionPct||0)/100));
+    var gastosIncluidos = item.gastosDisponibles.filter(function(g){ return g.incluido; });
+    var gastos = gastosIncluidos.reduce(function(s,g){ return s+g.monto; }, 0);
+    var neto = item.cobrado - comision - gastos;
+    totalCobrado += item.cobrado; totalComision += comision; totalGastos += gastos; totalNeto += neto;
+    return {
+      inmId: item.inmId, dir: item.dir, cobrado: item.cobrado,
+      comisionPct: item.comisionPct, comision: comision,
+      gastosIncluidos: gastosIncluidos.map(function(g){ return {id:g.id, concepto:g.concepto, monto:g.monto}; }),
+      gastos: gastos, neto: neto
+    };
+  });
+  var newId = (DB.liquidaciones||[]).length ? Math.max.apply(null, DB.liquidaciones.map(function(l){return l.id;})) + 1 : 1;
+  var liq = {
+    id: newId, locadorId: locId, periodo: periodo, fecha: new Date().toISOString().slice(0,10),
+    items: itemsOut,
+    totalCobrado: totalCobrado, totalComision: totalComision, totalGastos: totalGastos, totalNeto: totalNeto,
+    estado: estado || 'borrador',
+    fechaPago: (extra && extra.fechaPago) || null,
+    medioPago: (extra && extra.medioPago) || null
+  };
+  DB.liquidaciones.push(liq);
+  saveDB();
+  closeModal();
+  if(PAGE==='liquidaciones') nav('liquidaciones');
+  toast(estado==='pagada' ? 'Liquidación registrada como pagada ✓' : 'Liquidación guardada como borrador', 'success');
+  return liq;
+}
+
+function verLiquidacion(id) {
+  var liq = (DB.liquidaciones||[]).find(function(l){ return l.id===id; }); if(!liq) return;
+  var loc = getLoc(liq.locadorId);
+  var rows = liq.items.map(function(it) {
+    return '<tr>' +
+      '<td>'+h(it.dir.split(',')[0])+'</td>' +
+      '<td style="text-align:right">'+fmtPeso(it.cobrado)+'</td>' +
+      '<td style="text-align:right">'+fmtPeso(it.comision)+' <span style="color:var(--text3);font-size:11px">('+it.comisionPct+'%)</span></td>' +
+      '<td style="text-align:right">'+fmtPeso(it.gastos)+'</td>' +
+      '<td style="text-align:right;font-weight:600">'+fmtPeso(it.neto)+'</td>' +
+      '</tr>';
+  }).join('');
+  var body = document.createElement('div');
+  body.innerHTML =
+    '<div style="margin-bottom:12px;font-size:13px;color:var(--text3)">'+h(loc?loc.nombre:'—')+' · '+h(periodoLabel(liq.periodo)) +
+    (liq.estado==='pagada' ? ' · <span style="color:var(--green)">Pagada '+h(liq.fechaPago||'')+(liq.medioPago?' · '+h(liq.medioPago):'')+'</span>' : ' · <span style="color:var(--text3)">Borrador</span>') +
+    '</div>' +
+    '<div class="table-wrap"><table><thead><tr><th>Inmueble</th><th style="text-align:right">Cobrado</th><th style="text-align:right">Comisión</th><th style="text-align:right">Gastos</th><th style="text-align:right">Neto</th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
+    '<div style="text-align:right;margin-top:14px;font-size:20px;font-weight:600;color:var(--green)">Total: '+fmtPeso(liq.totalNeto)+'</div>';
+
+  var footer = modalFooter([
+    {label:'⬇ PDF', cls:'btn-secondary', action:function(){ descargarLiquidacionPDF(id); }},
+    {label:'💬 WhatsApp', cls:'btn-secondary', action:function(){ closeModal(); setTimeout(function(){ enviarLiquidacionWhatsApp(id); }, 150); }},
+    {label:'✉️ Email', cls:'btn-green', action:function(){ closeModal(); setTimeout(function(){ enviarLiquidacionEmail(id); }, 150); }}
+  ]);
+  openModal('Liquidación #' + id, body, true, footer);
+}
+
+// ── PDF ───────────────────────────────────────────────────────────
+function descargarLiquidacionPDF(id) {
+  var liq = (DB.liquidaciones||[]).find(function(l){ return l.id===id; }); if(!liq) return;
+  if(typeof jspdf === 'undefined') { toast('No se pudo cargar el generador de PDF (revisá tu conexión)','error'); return; }
+  var loc = getLoc(liq.locadorId);
+  var propietaria = getDefaultLoc();
+  var doc = new jspdf.jsPDF();
+  var y = 20;
+
+  doc.setFontSize(16); doc.setTextColor(20);
+  doc.text('Liquidación de alquileres', 14, y); y += 8;
+  doc.setFontSize(10); doc.setTextColor(120);
+  doc.text('PropManager · ' + (propietaria.nombre||''), 14, y); y += 10;
+
+  doc.setTextColor(20); doc.setFontSize(11);
+  doc.text('Propietario: ' + (loc?loc.nombre:'—'), 14, y); y += 6;
+  doc.text('Período: ' + periodoLabel(liq.periodo), 14, y); y += 6;
+  doc.text('Estado: ' + (liq.estado==='pagada' ? ('Pagada el '+(liq.fechaPago||'')+(liq.medioPago?' · '+liq.medioPago:'')) : 'Borrador'), 14, y); y += 10;
+
+  doc.setFontSize(9); doc.setFont(undefined,'bold');
+  doc.text('Inmueble', 14, y);
+  doc.text('Cobrado', 100, y, {align:'right'});
+  doc.text('Comisión', 130, y, {align:'right'});
+  doc.text('Gastos', 160, y, {align:'right'});
+  doc.text('Neto', 195, y, {align:'right'});
+  y += 2; doc.setDrawColor(180); doc.line(14, y, 195, y); y += 6;
+  doc.setFont(undefined,'normal');
+
+  liq.items.forEach(function(it) {
+    if(y > 270) { doc.addPage(); y = 20; }
+    doc.text((it.dir.split(',')[0]).substring(0,42), 14, y);
+    doc.text(fmtPeso(it.cobrado), 100, y, {align:'right'});
+    doc.text(fmtPeso(it.comision) + ' (' + it.comisionPct + '%)', 130, y, {align:'right'});
+    doc.text(fmtPeso(it.gastos), 160, y, {align:'right'});
+    doc.text(fmtPeso(it.neto), 195, y, {align:'right'});
+    y += 7;
+  });
+
+  y += 3; doc.setDrawColor(180); doc.line(14, y, 195, y); y += 10;
+  doc.setFontSize(13); doc.setFont(undefined,'bold');
+  doc.text('Total neto a transferir: ' + fmtPeso(liq.totalNeto), 14, y);
+
+  var filename = 'Liquidacion_' + (loc ? loc.nombre.replace(/[^a-zA-Z0-9]/g,'_') : 'propietario') + '_' + liq.periodo + '.pdf';
+  doc.save(filename);
+  return filename;
+}
+
+// ── Envío por WhatsApp / Email ──────────────────────────────────────
+function mensajeLiquidacion(liq, loc) {
+  var propietaria = getDefaultLoc();
+  return 'Hola ' + (loc?loc.nombre:'') + ',\n\n' +
+    'Te comparto la liquidación de ' + periodoLabel(liq.periodo) + ':\n\n' +
+    '• Cobrado: ' + fmtPeso(liq.totalCobrado) + '\n' +
+    '• Comisión: ' + fmtPeso(liq.totalComision) + '\n' +
+    '• Gastos: ' + fmtPeso(liq.totalGastos) + '\n' +
+    '• Neto a transferir: ' + fmtPeso(liq.totalNeto) + '\n\n' +
+    'Te adjunto el detalle en PDF.\n\n' +
+    'Saludos,\n' + (propietaria.nombre||'');
+}
+
+function enviarLiquidacionWhatsApp(id) {
+  var liq = (DB.liquidaciones||[]).find(function(l){ return l.id===id; }); if(!liq) return;
+  var loc = getLoc(liq.locadorId);
+  if(!loc || !loc.tel) { toast('Este locador no tiene teléfono cargado','error'); return; }
+  var num = loc.tel.replace(/[^0-9]/g,'');
+  var msg = mensajeLiquidacion(liq, loc);
+  abrirModalMensaje('Enviar liquidación por WhatsApp — ' + loc.nombre, msg, function(msgFinal) {
+    descargarLiquidacionPDF(id);
+    window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(msgFinal), '_blank');
+    toast('Se descargó el PDF — adjuntalo en el chat que se abrió', 'success');
+  }, 'whatsapp');
+}
+
+function enviarLiquidacionEmail(id) {
+  var liq = (DB.liquidaciones||[]).find(function(l){ return l.id===id; }); if(!liq) return;
+  var loc = getLoc(liq.locadorId);
+  if(!loc || !loc.email) { toast('Este locador no tiene email cargado','error'); return; }
+  var msg = mensajeLiquidacion(liq, loc);
+  abrirModalMensaje('Enviar liquidación por email — ' + loc.nombre, msg, function(msgFinal) {
+    descargarLiquidacionPDF(id);
+    var asunto = encodeURIComponent('Liquidación ' + periodoLabel(liq.periodo));
+    window.location.href = 'mailto:' + loc.email + '?subject=' + asunto + '&body=' + encodeURIComponent(msgFinal);
+    toast('Se descargó el PDF — adjuntalo en el email que se abrió', 'success');
+  }, 'email');
+}
+
+// ============================================================
 // INIT
 // ============================================================
 // Load persisted data
 var loaded = loadDB();
+migrarLocadorPorInmueble();
+migrarLocadorSRL();
 nav('dashboard');
 if(loaded) {
   // Show subtle indicator that data was restored

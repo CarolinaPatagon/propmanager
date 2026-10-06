@@ -705,6 +705,21 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
   .page-title { font-size:20px; }
 }
 
+/* ══ FIX LAYOUT — secciones de página no se comprimen ═══════════ */
+/* .main es flex en columna con scroll: sin esto el encabezado y las
+   barras de filtros se aplastaban y el título quedaba cortado */
+.main > * { flex-shrink:0; }
+.main select { width:auto; max-width:100%; }
+.main .form-field select, .main .form-grid select { width:100%; }
+.inq-stats { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; padding:16px 28px; background:var(--surface); border-bottom:1px solid var(--border); }
+@media (max-width: 900px) { .inq-stats { grid-template-columns:repeat(3,1fr); padding:14px 20px; } }
+@media (max-width: 640px) {
+  .inq-stats { grid-template-columns:repeat(2,1fr); gap:8px; padding:12px 14px; }
+  .inq-stats > div:last-child { grid-column:1/-1; }
+  .inq-filters { padding:10px 14px !important; }
+  .inq-filters select { flex:1 1 45%; }
+}
+
 /* ══ BRAND — logo A (techo + P, degradé) ══════════════════════ */
 .brand-icon {
   width:38px; height:38px; border-radius:11px; flex-shrink:0;
@@ -3069,7 +3084,7 @@ function renderInqPage(el) {
     '</div>' +
 
     // ── Stats row ──
-    '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:16px 32px;background:var(--surface);border-bottom:1px solid var(--border)">' +
+    '<div class="inq-stats">' +
     [
       {label:'Activos',    val:activos.length,    color:'var(--green)',      click:'todos',   deuda:'todos',  est:'activo'},
       {label:'Prospectos', val:prospectos.length,  color:'var(--accent-dark)',click:'todos',   deuda:'todos',  est:'prospecto'},
@@ -3090,7 +3105,7 @@ function renderInqPage(el) {
     '</div>' +
 
     // ── Filter bar ──
-    '<div style="display:flex;align-items:center;gap:10px;padding:10px 32px;background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap">' +
+    '<div class="inq-filters" style="display:flex;align-items:center;gap:10px;padding:10px 28px;background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap">' +
     '<div style="display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:6px 12px;flex:1;min-width:200px">' +
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--text3)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
     '<input id="inq-buscar" type="text" placeholder="Buscar por nombre, DNI, teléfono, inmueble..." value="'+h(INQ_FILTER.buscar)+'" ' +
@@ -3921,30 +3936,161 @@ function pgContratos(el) {
   var rows = DB.contratos.map(function(c) {
     var inm=getInm(c.inmId); var inq=getInq(c.inqId); var loc=getLoc(c.locId);
     return '<tr>' +
-      '<td style="font-weight:500;font-size:12px;font-family:monospace;color:var(--accent-dark)">' + h(c.num) + '</td>' +
+      '<td style="font-weight:500;font-size:12px;font-family:monospace;color:var(--accent-dark)">' + h(c.num) + (ctEsDuplicado(c) ? '<div><span class="badge badge-amber" style="font-size:10px;font-family:var(--sans)">⚠ posible duplicado</span></div>' : '') + '</td>' +
       '<td><div style="font-size:13px;font-weight:500">' + h(inm?inm.dir.split(',')[0]:'—') + '</div>' +
       '<div style="font-size:11px;color:var(--text3)">' + h(inm?inm.tipo:'') + '</div></td>' +
       '<td>' + h(inq?inq.nombre:'—') + '</td>' +
       '<td style="font-size:12px;color:var(--text3)">' + h(loc?loc.nombre:'Carolina Gerosa') + '</td>' +
-      '<td style="font-size:12px"><div>' + h(c.inicio) + '</div><div style="color:var(--text3)">hasta ' + h(c.fin) + '</div></td>' +
-      '<td style="font-weight:500">' + fmtPeso(c.monto) + '</td>' +
+      '<td style="font-size:12px"><div>' + h(c.inicio) + '</div><div style="color:var(--text3)">' + (c.fin ? 'hasta ' + h(c.fin) : 'sin fecha de fin') + '</div></td>' +
+      '<td style="font-weight:500;white-space:nowrap">' + fmtMoneda(c.monto, monedaCt(c)) + '</td>' +
+      '<td style="white-space:nowrap">' + (function(){ var r = ctResumenCobros(c.id);
+        if(!r.total) return '<span style="font-size:12px;color:var(--text3)">Sin cobros</span>';
+        return (r.conPago.length ? '<span class="badge badge-green" style="font-size:11px">💰 ' + r.conPago.length + ' con pago' + (r.conPago.length!==1?'s':'') + '</span>' : '<span class="badge badge-gray" style="font-size:11px">Sin pagos</span>') +
+          '<div style="font-size:11px;color:var(--text3);margin-top:3px">' + r.total + ' cobro' + (r.total!==1?'s':'') + ' generado' + (r.total!==1?'s':'') + '</div>'; })() + '</td>' +
       '<td>' + statusBadge(c.estado) + '</td>' +
-      '<td><button class="btn btn-ghost" style="font-size:12px" onclick="regenContract(' + c.id + ')">⬇ Descargar</button></td>' +
+      '<td><div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:nowrap">' +
+        '<button class="btn btn-ghost" style="font-size:12px" onclick="editarContrato(' + c.id + ')">✏ Editar</button>' +
+        '<button class="btn btn-ghost" style="font-size:12px" onclick="regenContract(' + c.id + ')" aria-label="Descargar contrato">⬇</button>' +
+        '<button class="btn btn-ghost" style="font-size:12px;color:var(--red)" onclick="eliminarContrato(' + c.id + ')" aria-label="Eliminar contrato">🗑</button>' +
+      '</div></td>' +
       '</tr>';
-  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">Sin contratos — hacé clic en "+ Nuevo contrato" para crear uno</td></tr>';
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">Sin contratos — hacé clic en "+ Nuevo contrato" para crear uno</td></tr>';
 
   el.innerHTML =
     '<div class="page-header">' +
     '<div><div class="page-title">Contratos</div>' +
-    '<div class="page-subtitle">' + DB.contratos.filter(function(c){return c.estado==='vigente';}).length + ' contratos activos</div></div>' +
+    '<div class="page-subtitle">' + DB.contratos.filter(function(c){return c.estado==='vigente';}).length + ' contratos activos' + (DB.contratos.filter(ctEsDuplicado).length ? ' · <span style="color:var(--amber);font-weight:600">' + DB.contratos.filter(ctEsDuplicado).length + ' posibles duplicados</span>' : '') + '</div></div>' +
     '<div style="display:flex;gap:8px">' +
     '<button class="btn btn-secondary" onclick="nav(&apos;locadores&apos;)" style="font-size:13px">&#128100; Locadores</button>' +
     '<button class="btn btn-primary" onclick="startContractWizard()">+ Nuevo contrato</button>' +
     '</div></div>' +
     '<div class="page-content fade-in" id="ct-content">' +
     '<div class="table-wrap"><table><thead><tr>' +
-    '<th>Número</th><th>Inmueble</th><th>Locatario</th><th>Locador</th><th>Vigencia</th><th>Alquiler</th><th>Estado</th><th></th>' +
+    '<th>Número</th><th>Inmueble</th><th>Locatario</th><th>Locador</th><th>Vigencia</th><th>Alquiler</th><th>Pagos</th><th>Estado</th><th></th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+}
+
+// ============================================================
+// CONTRATOS — editar y eliminar
+// ============================================================
+function ctResumenCobros(ctId) {
+  var cobros = DB.cobros.filter(function(c){ return c.ctId === ctId; });
+  var conPago = cobros.filter(function(c){ return c.estado === 'cobrado' || cobroPagado(c) > 0; });
+  return { total:cobros.length, conPago:conPago, sinPago:cobros.filter(function(c){ return conPago.indexOf(c) < 0; }) };
+}
+function ctEsDuplicado(c) {
+  return c.estado === 'vigente' && DB.contratos.some(function(o){ return o.id !== c.id && o.estado === 'vigente' && o.inqId === c.inqId && o.inmId === c.inmId; });
+}
+// Estado del inmueble según sus contratos vigentes
+function ctSyncInmueble(inmId) {
+  var inm = getInm(inmId); if(!inm) return;
+  var vig = DB.contratos.some(function(c){ return c.inmId === inmId && c.estado === 'vigente'; });
+  if(vig) inm.estado = 'alquilado';
+  else if(inm.estado === 'alquilado') inm.estado = 'disponible';
+}
+function ctSyncInquilino(inqId) {
+  var inq = getInq(inqId); if(!inq) return;
+  var ct = DB.contratos.find(function(c){ return c.inqId === inqId && c.estado === 'vigente'; }) || DB.contratos.find(function(c){ return c.inqId === inqId; });
+  inq.contrato = ct ? ct.num : '';
+  if(ct) inq.inmId = ct.inmId;
+}
+
+function editarContrato(ctId) {
+  var c = getCt(ctId); if(!c) return;
+  var mon = monedaCt(c);
+  var opt = function(list, sel, lab){ return list.map(function(x){ return '<option value="' + x.id + '"' + (x.id===sel?' selected':'') + '>' + h(lab(x)) + '</option>'; }).join(''); };
+  var res = ctResumenCobros(ctId);
+  var bodyEl = document.createElement('div');
+  bodyEl.innerHTML =
+    (ctEsDuplicado(c) ? '<div style="background:var(--amber-light);color:var(--amber);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12.5px">⚠ Hay otro contrato vigente con el mismo inquilino e inmueble. Si es un duplicado, podés eliminar uno de los dos.</div>' : '') +
+    '<div class="form-grid">' +
+    '<div class="form-field full"><label for="ec-inm">Inmueble</label><select id="ec-inm">' + opt(DB.inmuebles, c.inmId, function(x){ return x.dir; }) + '</select></div>' +
+    '<div class="form-field"><label for="ec-inq">Locatario (inquilino)</label><select id="ec-inq">' + opt(DB.inquilinos, c.inqId, function(x){ return x.nombre; }) + '</select></div>' +
+    '<div class="form-field"><label for="ec-loc">Locador</label><select id="ec-loc"><option value="">Carolina Gerosa (por defecto)</option>' + opt(DB.locadores||[], c.locId, function(x){ return x.nombre; }) + '</select></div>' +
+    '<div class="form-field"><label for="ec-ini">Inicio</label><input id="ec-ini" type="date" value="' + h(c.inicio||'') + '"></div>' +
+    '<div class="form-field"><label for="ec-fin">Fin</label><input id="ec-fin" type="date" value="' + h(c.fin||'') + '"></div>' +
+    '<div class="form-field"><label for="ec-monto">Alquiler mensual</label><div style="display:flex;gap:6px">' + selectMoneda('ec-moneda', mon) + '<input id="ec-monto" type="number" value="' + (c.monto||0) + '" style="flex:1;min-width:0"></div></div>' +
+    '<div class="form-field"><label for="ec-estado">Estado</label><select id="ec-estado">' +
+      ['vigente','finalizado','rescindido'].map(function(s){ return '<option' + (c.estado===s?' selected':'') + '>' + s + '</option>'; }).join('') + '</select></div>' +
+    '<div class="form-field full"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer">' +
+      '<input id="ec-actcob" type="checkbox" checked style="width:18px;height:18px"> Aplicar monto y moneda a los cobros pendientes sin pagos (' + res.sinPago.length + ')</label></div>' +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--text3);margin-top:10px">' + h(c.num) + ' · ' + res.total + ' cobros generados · ' + res.conPago.length + ' con pagos registrados</div>';
+
+  var footer = modalFooter([
+    { label:'🗑 Eliminar', cls:'btn-danger', action:function(){ eliminarContrato(ctId); } },
+    { label:'Guardar cambios', cls:'btn-primary', action:function(){
+      var inmAnt = c.inmId, inqAnt = c.inqId;
+      c.inmId = parseFloat(document.getElementById('ec-inm').value);
+      c.inqId = parseFloat(document.getElementById('ec-inq').value);
+      c.locId = parseFloat(document.getElementById('ec-loc').value) || null;
+      c.inicio = document.getElementById('ec-ini').value;
+      c.fin = document.getElementById('ec-fin').value;
+      c.monto = parseFloat(document.getElementById('ec-monto').value) || 0;
+      c.moneda = document.getElementById('ec-moneda').value;
+      c.estado = document.getElementById('ec-estado').value;
+      if(document.getElementById('ec-actcob').checked) {
+        res.sinPago.forEach(function(cb){ cb.monto = c.monto; cb.moneda = c.moneda; });
+      }
+      [inmAnt, c.inmId].forEach(ctSyncInmueble);
+      [inqAnt, c.inqId].forEach(ctSyncInquilino);
+      saveDB(); closeModal(); nav('contratos'); toast('Contrato ' + c.num + ' actualizado ✓','success');
+    }}
+  ]);
+  openModal('Editar contrato ' + c.num, bodyEl, false, footer);
+}
+
+function eliminarContrato(ctId) {
+  var c = getCt(ctId); if(!c) return;
+  var inq = getInq(c.inqId), inm = getInm(c.inmId);
+  var res = ctResumenCobros(ctId);
+  var otros = DB.contratos.filter(function(o){ return o.id !== ctId && o.inqId === c.inqId; })
+    .sort(function(a,b){ return (b.inmId===c.inmId) - (a.inmId===c.inmId) || (b.estado==='vigente') - (a.estado==='vigente'); });
+
+  var bodyEl = document.createElement('div');
+  bodyEl.innerHTML =
+    '<div style="background:var(--red-light);color:var(--red);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;font-size:13px;font-weight:500">¿Seguro que querés eliminar el contrato <strong>' + h(c.num) + '</strong>? Esta acción no se puede deshacer.</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--surface2);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;font-size:13px">' +
+      '<div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Inquilino</div>' + h(inq?inq.nombre:'—') + '</div>' +
+      '<div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Inmueble</div>' + h(inm?inm.dir.split(',')[0]:'—') + '</div>' +
+      '<div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Alquiler</div>' + fmtMoneda(c.monto, monedaCt(c)) + '</div>' +
+      '<div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Vigencia</div>' + h(c.inicio||'—') + ' → ' + h(c.fin||'sin fecha') + '</div>' +
+    '</div>' +
+    '<div style="font-size:13px;line-height:1.6">' +
+      (res.sinPago.length ? '• Se eliminarán <strong>' + res.sinPago.length + '</strong> cobro' + (res.sinPago.length!==1?'s':'') + ' sin pagos.<br>' : '• No tiene cobros pendientes.<br>') +
+      (res.conPago.length ? '• Tiene <strong>' + res.conPago.length + '</strong> cobro' + (res.conPago.length!==1?'s':'') + ' con pagos registrados (' + res.conPago.map(function(x){ return x.mes.replace(/\s+/g,' '); }).join(', ') + ').' : '') +
+    '</div>' +
+    (res.conPago.length ?
+      '<div class="form-field" style="margin-top:12px"><label for="del-dest">¿Qué hago con los cobros pagados?</label><select id="del-dest">' +
+        otros.map(function(o){ var oi = getInm(o.inmId); return '<option value="' + o.id + '">Pasarlos al contrato ' + h(o.num) + ' · ' + h(oi?oi.dir.split(',')[0]:'') + ' (' + o.estado + ')</option>'; }).join('') +
+        '<option value="borrar">Eliminarlos también (se pierde el historial de esos pagos)</option>' +
+      '</select></div>' : '');
+
+  var footer = modalFooter([{ label:'Sí, eliminar contrato', cls:'btn-danger', action:function() {
+    var dest = document.getElementById('del-dest') ? document.getElementById('del-dest').value : 'borrar';
+    var borrarIds = res.sinPago.map(function(x){ return x.id; });
+    if(dest === 'borrar') {
+      borrarIds = borrarIds.concat(res.conPago.map(function(x){ return x.id; }));
+    } else {
+      var destId = parseFloat(dest);
+      res.conPago.forEach(function(cb) {
+        // Si el contrato destino tiene el mismo mes sin pagos, ese queda reemplazado por el pagado
+        var k = periodoKey(cb.mes);
+        DB.cobros.filter(function(o){ return o.ctId === destId && periodoKey(o.mes) === k && o.estado !== 'cobrado' && !cobroPagado(o); })
+          .forEach(function(o){ borrarIds.push(o.id); });
+        cb.ctId = destId;
+      });
+    }
+    DB.cobros = DB.cobros.filter(function(cb){ return borrarIds.indexOf(cb.id) < 0; });
+    // Comprobantes que apuntaban a cobros eliminados quedan sueltos en la ficha del inquilino
+    (DB.inquilinos||[]).forEach(function(i){ (i.comprobantes||[]).forEach(function(cp){ if(cp.cobroId && borrarIds.indexOf(cp.cobroId) > -1) cp.cobroId = null; }); });
+    DB.contratos = DB.contratos.filter(function(o){ return o.id !== ctId; });
+    ctSyncInmueble(c.inmId); ctSyncInquilino(c.inqId);
+    saveDB(); closeModal(); nav('contratos');
+    if(typeof updateAlertaBadge === 'function') updateAlertaBadge();
+    toast('Contrato ' + c.num + ' eliminado','success');
+  }}]);
+  openModal('Eliminar contrato', bodyEl, false, footer);
 }
 
 function startContractWizard() {
@@ -5952,7 +6098,7 @@ function compRenderThumbs() {
 // Opciones de cobro para un inquilino: pendientes (anteriores y del mes) + mes actual sin generar
 function compOpcionesCobro(inqId) {
   var kHoy = keyHoy();
-  var cts = DB.contratos.filter(function(ct){ return ct.inqId === inqId; });
+  var cts = DB.contratos.filter(function(ct){ return String(ct.inqId) === String(inqId); });
   var ops = [];
   cts.forEach(function(ct) {
     var inm = getInm(ct.inmId); var dir = inm ? inm.dir.split(',')[0] : (ct.num||'');
@@ -6027,10 +6173,16 @@ function subirComprobante(cobroId) {
 
   // Inquilinos con contrato: primero los que tienen saldo pendiente
   var kHoy = keyHoy();
-  var inqs = DB.inquilinos.filter(function(i){ return DB.contratos.some(function(ct){ return ct.inqId === i.id; }); }).map(function(i) {
-    var pend = DB.cobros.some(function(c){ var ct = getCt(c.ctId); var k = periodoKey(c.mes); return ct && ct.inqId === i.id && c.estado !== 'cobrado' && k !== null && k <= kHoy; });
-    return { i:i, pend:pend };
-  }).sort(function(a,b){ return (b.pend - a.pend) || a.i.nombre.localeCompare(b.i.nombre); });
+  // TODOS los inquilinos: agrupados en con saldo / con contrato / sin contrato
+  var inqs = DB.inquilinos.map(function(i) {
+    var pend = DB.cobros.some(function(c){ var ct = getCt(c.ctId); var k = periodoKey(c.mes); return ct && String(ct.inqId) === String(i.id) && c.estado !== 'cobrado' && k !== null && k <= kHoy; });
+    var conCt = DB.contratos.some(function(ct){ return String(ct.inqId) === String(i.id); });
+    return { i:i, pend:pend, conCt:conCt };
+  }).sort(function(a,b){ return String(a.i.nombre||'').localeCompare(String(b.i.nombre||''), 'es'); });
+  var grupo = function(titulo, arr){ return arr.length ? '<optgroup label="' + titulo + '">' + arr.map(function(x){ return '<option value="' + x.i.id + '"' + (x.i.id===preInq?' selected':'') + '>' + h(x.i.nombre||'(sin nombre)') + (x.i.inmId && getInm(x.i.inmId) ? ' · ' + h(getInm(x.i.inmId).dir.split(',')[0]) : '') + '</option>'; }).join('') + '</optgroup>' : ''; };
+  var optsInq = grupo('Con saldo pendiente', inqs.filter(function(x){ return x.pend; })) +
+    grupo('Con contrato, al día', inqs.filter(function(x){ return !x.pend && x.conCt; })) +
+    grupo('Sin contrato', inqs.filter(function(x){ return !x.conCt; }));
 
   var esMovil = window.innerWidth <= 640;
   var CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
@@ -6047,9 +6199,11 @@ function subirComprobante(cobroId) {
       '<div class="comp-thumbs" id="cu-thumbs"></div>' +
     '</div>' +
     '<div class="form-grid" style="margin-top:16px">' +
-      '<div class="form-field full"><label for="cu-inq">Inquilino *</label><select id="cu-inq" onchange="compActualizarCobro()">' +
+      '<div class="form-field full"><label for="cu-inq">Inquilino * <span style="text-transform:none;letter-spacing:0;font-weight:500">(' + inqs.length + ')</span></label>' +
+        (inqs.length > 8 ? '<input id="cu-inq-q" type="search" placeholder="Buscar inquilino…" oninput="compFiltrarInq(this.value)" style="margin-bottom:6px">' : '') +
+        '<select id="cu-inq" onchange="compActualizarCobro()">' +
         '<option value="">Elegí un inquilino…</option>' +
-        inqs.map(function(x){ return '<option value="' + x.i.id + '"' + (x.i.id===preInq?' selected':'') + '>' + h(x.i.nombre) + (x.pend ? ' · con saldo pendiente' : '') + '</option>'; }).join('') +
+        optsInq +
       '</select></div>' +
       '<div class="form-field full"><label for="cu-cobro">¿Qué está pagando? *</label><select id="cu-cobro" onchange="compActualizarMonto()"><option value="">Elegí primero el inquilino</option></select>' +
         '<div id="cu-info" style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"></div></div>' +
@@ -6079,9 +6233,22 @@ function subirComprobante(cobroId) {
   }, 30);
 }
 
+function compFiltrarInq(q) {
+  q = (q||'').toLowerCase().trim();
+  var sel = document.getElementById('cu-inq'); if(!sel) return;
+  var primera = null;
+  Array.prototype.forEach.call(sel.options, function(o) {
+    if(!o.value) return;
+    var ok = !q || o.text.toLowerCase().indexOf(q) > -1;
+    o.hidden = !ok; o.disabled = !ok;
+    if(ok && !primera) primera = o;
+  });
+  if(q && primera && sel.value !== primera.value) { sel.value = primera.value; compActualizarCobro(); }
+}
+
 function guardarComprobanteRapido() {
   var inqId = parseFloat(document.getElementById('cu-inq').value);
-  var inq = getInq(inqId);
+  var inq = getInq(inqId) || DB.inquilinos.find(function(i){ return String(i.id) === document.getElementById('cu-inq').value; });
   var cobVal = document.getElementById('cu-cobro').value;
   if(!inq) { toast('Elegí el inquilino','error'); return; }
   if(!cobVal) { toast('Elegí qué está pagando','error'); return; }

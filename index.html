@@ -2204,7 +2204,15 @@ function pgDashboard(el) {
   var incidencias2 = FILTER.locadorId==='todos' ? DB.incidencias : DB.incidencias.filter(function(i){ return inmCoincideLocador(i.inmId); });
 
   var ingresos  = cobros.filter(function(c){return c.estado==='cobrado';}).reduce(function(s,c){return s+c.monto;},0);
-  var pendiente = cobros.filter(function(c){return c.estado==='pendiente';}).reduce(function(s,c){return s+c.monto;},0);
+  // Exigibles: cobros sin completar del mes actual o anteriores (los meses futuros no cuentan)
+  var kHoyD = keyHoy(), hoyD = hoyISO();
+  var exigibles = cobros.filter(function(c){ var k = periodoKey(c.mes); return c.estado !== 'cobrado' && k !== null && k <= kHoyD && cobroSaldo(c) > 0; });
+  var esVencido = function(c){ return (c.vence && c.vence < hoyD) || periodoKey(c.mes) < kHoyD; };
+  var porCobrar = {}; exigibles.forEach(function(c){ var m = monedaCobro(c); porCobrar[m] = (porCobrar[m]||0) + cobroSaldo(c); });
+  var nVencidos = exigibles.filter(esVencido).length;
+  var kCompact = function(map){ var ks = Object.keys(map).filter(function(k){ return map[k]; }); if(!ks.length) return '$0';
+    ks.sort(function(a,b){ return a==='ARS'?-1:b==='ARS'?1:0; });
+    return ks.map(function(k,i){ var v = map[k]; var s = monedaInfo(k).simb + (k!=='ARS'?' ':'') + (v >= 100000 ? Math.round(v/1000).toLocaleString('es-AR') + 'k' : v.toLocaleString('es-AR')); return i ? '<div style="font-size:14px">' + s + '</div>' : s; }).join(''); };
   var gastosTot = gastos2.reduce(function(s,g){return s+g.monto;},0);
   var resultado = ingresos - gastosTot;
   var alquilados  = inmuebles2.filter(function(i){return i.estado==='alquilado';}).length;
@@ -2227,14 +2235,35 @@ function pgDashboard(el) {
     return viaContrato + directo;
   });
 
-  var cobrosRows = cobros.filter(function(c){return c.estado==='pendiente';}).map(function(c) {
-    var ct=getCt(c.ctId); var inq=ct?getInq(ct.inqId):null; var inm2=ct?getInm(ct.inmId):null;
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">' +
-      '<div><div style="font-size:13px;font-weight:500">'+h(inq?inq.nombre:'—')+'</div>' +
-      '<div style="font-size:12px;color:var(--text3)">'+h(inm2?inm2.dir.split(',')[0]:'—')+'  ·  '+h(c.mes)+'</div></div>' +
-      '<div style="text-align:right"><div style="font-size:13px;font-weight:500">'+fmtPeso(c.monto)+'</div>' +
-      '<span style="font-size:11px;color:var(--accent-dark)">vence '+h(c.vence||'—')+'</span></div></div>';
-  }).join('') || '<div style="font-size:13px;color:var(--text3);padding:12px 0">Sin cobros pendientes ✓</div>';
+  // Una fila por contrato: meses adeudados agrupados, vencidos primero
+  var porCt = {};
+  exigibles.forEach(function(c){ (porCt[c.ctId] = porCt[c.ctId] || []).push(c); });
+  var grupos = Object.keys(porCt).map(function(id) {
+    var list = porCt[id].sort(function(a,b){ return periodoKey(a.mes) - periodoKey(b.mes); });
+    var venc = list.filter(esVencido);
+    var masViejo = venc.length ? (venc[0].vence || '') : '';
+    var dias = masViejo ? Math.max(0, Math.round((new Date(hoyD) - new Date(masViejo)) / 86400000)) : 0;
+    return { ct:getCt(parseFloat(id)), list:list, venc:venc.length, dias:dias,
+      saldo:list.reduce(function(s,c){ return s + cobroSaldo(c); }, 0), mon:monedaCobro(list[0]),
+      parcial:list.some(function(c){ return cobroPagado(c) > 0; }) };
+  }).sort(function(a,b){ return (b.venc>0) - (a.venc>0) || b.dias - a.dias || b.saldo - a.saldo; });
+  var MAXF = 8;
+  var cobrosRows = grupos.slice(0, MAXF).map(function(g) {
+    var ct = g.ct; var inq = ct ? getInq(ct.inqId) : null; var inm2 = ct ? getInm(ct.inmId) : null;
+    var meses = g.list.map(function(c){ return String(c.mes).replace(/\s+/g,' '); }).join(', ');
+    var estado = g.venc ? '<span class="badge badge-red" style="font-size:10.5px">vencido' + (g.dias ? ' · ' + g.dias + ' d' : '') + '</span>'
+      : g.parcial ? '<span class="badge badge-blue" style="font-size:10.5px">parcial</span>'
+      : '<span class="badge badge-amber" style="font-size:10.5px">del mes</span>';
+    var primero = g.list[0];
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="min-width:0"><div style="font-size:13px;font-weight:500">'+h(inq?inq.nombre:'—')+' '+estado+'</div>' +
+      '<div style="font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+h(inm2?inm2.dir.split(',')[0]:'—')+'  ·  '+h(meses)+'</div></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><div style="text-align:right"><div style="font-size:13.5px;font-weight:600;color:'+(g.venc?'var(--red)':'var(--text)')+'">'+fmtMoneda(g.saldo, g.mon)+'</div>' +
+      '<div style="font-size:11px;color:var(--text3)">'+g.list.length+' mes'+(g.list.length!==1?'es':'')+'</div></div>' +
+      '<button class="btn btn-ghost" style="font-size:12px;padding:6px 8px" onclick="subirComprobante('+primero.id+')" aria-label="Registrar pago con comprobante">📎</button></div></div>';
+  }).join('') +
+  (grupos.length > MAXF ? '<button class="btn btn-ghost" style="font-size:12px;margin-top:8px" onclick="nav(&apos;facturacion&apos;)">+ '+(grupos.length-MAXF)+' más en Facturación →</button>' : '');
+  if(!cobrosRows) cobrosRows = '<div style="font-size:13px;color:var(--text3);padding:12px 0">✓ Nada vencido ni pendiente de este mes</div>';
 
   var incRows = incidencias2.filter(function(i){return i.estado!=='resuelto';}).map(function(inc) {
     var inm2=getInm(inc.inmId);
@@ -2265,9 +2294,9 @@ function pgDashboard(el) {
     '<div class="stat-card"><div class="stat-label">Ingresos cobrados</div>' +
     '<div class="stat-value" style="color:var(--green)">$'+Math.round(ingresos/1000)+'k</div>' +
     '<div class="stat-sub stat-up">'+cobros.filter(function(c){return c.estado==='cobrado';}).length+' recibos</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Por cobrar</div>' +
-    '<div class="stat-value" style="color:var(--accent-dark)">$'+Math.round(pendiente/1000)+'k</div>' +
-    '<div class="stat-sub">'+cobros.filter(function(c){return c.estado==='pendiente';}).length+' pendientes</div></div>' +
+    '<div class="stat-card" style="cursor:pointer" onclick="nav(&apos;facturacion&apos;)"><div class="stat-label">Por cobrar (vencido + mes)</div>' +
+    '<div class="stat-value" style="color:'+(nVencidos?'var(--red)':'var(--accent-dark)')+'">'+kCompact(porCobrar)+'</div>' +
+    '<div class="stat-sub">'+(nVencidos ? nVencidos+' vencido'+(nVencidos!==1?'s':'')+' · ' : '')+(exigibles.length-nVencidos)+' del mes</div></div>' +
     '<div class="stat-card"><div class="stat-label">Gastos</div>' +
     '<div class="stat-value" style="color:var(--red)">$'+Math.round(gastosTot/1000)+'k</div>' +
     '<div class="stat-sub">'+gastos2.length+' egresos</div></div>' +
@@ -2277,8 +2306,8 @@ function pgDashboard(el) {
     '</div>' +
 
     // Middle row
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">' +
-    '<div class="card"><div class="card-header"><div class="card-title">Cobros pendientes</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:16px">' +
+    '<div class="card"><div class="card-header"><div class="card-title">Cobros pendientes <span style="font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0">· vencidos y del mes</span></div>' +
     '<button class="btn btn-ghost" style="font-size:12px" onclick="nav(&apos;facturacion&apos;)">Ver todos →</button></div>' +
     cobrosRows + '</div>' +
     '<div class="card"><div class="card-header"><div class="card-title">Incidencias abiertas</div>' +

@@ -708,7 +708,8 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
 /* ══ FIX LAYOUT — secciones de página no se comprimen ═══════════ */
 /* .main es flex en columna con scroll: sin esto el encabezado y las
    barras de filtros se aplastaban y el título quedaba cortado */
-.main > * { flex-shrink:0; }
+.main { min-width:0; }
+.main > * { flex-shrink:0; min-width:0; }
 .main select { width:auto; max-width:100%; }
 .main .form-field select, .main .form-grid select { width:100%; }
 .inq-stats { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; padding:16px 28px; background:var(--surface); border-bottom:1px solid var(--border); }
@@ -1085,6 +1086,10 @@ function exportUserData() {
     cobros:      DB.cobros      || [],
     gastos:      DB.gastos      || [],
     incidencias: DB.incidencias || [],
+    proveedores: DB.proveedores || [],
+    impuestos:   DB.impuestos   || [],
+    pagoImpuestos: DB.pagoImpuestos || [],
+    liquidaciones: DB.liquidaciones || [],
     inmuebles:   DB.inmuebles.map(function(p){ return Object.assign({},p,{fotos:[]}); })
   };
   var json = JSON.stringify(data, null, 2);
@@ -1114,6 +1119,10 @@ function importUserData(input) {
       if(data.cobros)      DB.cobros      = data.cobros;
       if(data.gastos)      DB.gastos      = data.gastos;
       if(data.incidencias) DB.incidencias = data.incidencias;
+      if(data.proveedores)   DB.proveedores   = data.proveedores;
+      if(data.impuestos)     DB.impuestos     = data.impuestos;
+      if(data.pagoImpuestos) DB.pagoImpuestos = data.pagoImpuestos;
+      if(data.liquidaciones) DB.liquidaciones = data.liquidaciones;
       if(data.inmuebles && data.inmuebles.length) {
         // Merge: preserve existing fotos, update rest
         data.inmuebles.forEach(function(imp){
@@ -2380,7 +2389,8 @@ function showInmDetail(id) {
   tabBar.innerHTML =
     '<div class="tab active" onclick="inmSwitchTab(this,0,'+id+')">📋 Información</div>' +
     '<div class="tab" onclick="inmSwitchTab(this,1,'+id+')">💰 Impuestos</div>' +
-    '<div class="tab" onclick="inmSwitchTab(this,2,'+id+')">📅 Calendario</div>';
+    '<div class="tab" onclick="inmSwitchTab(this,2,'+id+')">📅 Calendario</div>' +
+    '<div class="tab" onclick="inmSwitchTab(this,3,'+id+')">📈 Inversión</div>';
   body.appendChild(tabBar);
 
   // ── Tab 0: Información ───────────────────────────────────────
@@ -2439,6 +2449,11 @@ function showInmDetail(id) {
   renderCalendarioPagos(tab2, id);
   body.appendChild(tab2);
 
+  // ── Tab 3: Inversión y recupero ───────────────────────────────
+  var tab3 = document.createElement('div'); tab3.id = 'inm-tab-3-'+id; tab3.style.display='none';
+  renderInversiones(tab3, id);
+  body.appendChild(tab3);
+
   openModal('Detalle — ' + p.dir.split(',')[0], body, true);
 }
 
@@ -2450,13 +2465,202 @@ function inmSwitchTab(el, idx, inmId) {
   tabs.forEach(function(t){ t.classList.remove('active'); });
   el.classList.add('active');
   // Toggle panels
-  [0,1,2].forEach(function(i){
+  [0,1,2,3].forEach(function(i){
     var panel = document.getElementById('inm-tab-'+i+'-'+inmId);
     if(panel) panel.style.display = (i===idx?'block':'none');
   });
   // Refresh content when switching
   if(idx===1) { var p1=document.getElementById('inm-tab-1-'+inmId); if(p1) renderImpuestosList(p1, inmId); }
   if(idx===2) { var p2=document.getElementById('inm-tab-2-'+inmId); if(p2) renderCalendarioPagos(p2, inmId); }
+  if(idx===3) { var p3=document.getElementById('inm-tab-3-'+inmId); if(p3) renderInversiones(p3, inmId); }
+}
+
+// ============================================================
+// INVERSIONES por inmueble — costos puntuales y recupero
+// Se guardan en inm.inversiones = [{id, fecha, concepto, cat, monto, moneda, notas}]
+// ============================================================
+var INV_CATS = ['Reforma','Mobiliario','Electrodomésticos','Compra / escritura','Instalaciones','Otro'];
+
+// Convierte un monto de una moneda a otra con el tipo de cambio de referencia del inmueble (ARS por unidad)
+function invConvertir(monto, de, a, inm) {
+  if(de === a) return monto;
+  var tc = (inm && inm.tcRef) || {};
+  var enArs = de === 'ARS' ? monto : monto * (Number(tc[de]) || 0);
+  if(a === 'ARS') return enArs;
+  var t = Number(tc[a]) || 0;
+  return t ? enArs / t : 0;
+}
+
+function invResumen(inmId) {
+  var inm = getInm(inmId); if(!inm) return null;
+  var invs = (inm.inversiones || []).slice().sort(function(a,b){ return String(a.fecha).localeCompare(String(b.fecha)); });
+  if(!invs.length) return { invs:[], moneda:'ARS', invertido:0 };
+  // Moneda de análisis = la de la mayor parte de lo invertido
+  var porMon = {}; invs.forEach(function(x){ porMon[x.moneda||'ARS'] = (porMon[x.moneda||'ARS']||0) + 1; });
+  var mon = Object.keys(porMon).sort(function(a,b){ return porMon[b]-porMon[a]; })[0];
+  var faltaTC = {};
+  var conv = function(m, de){ if(de !== mon && de !== 'ARS' && !(inm.tcRef||{})[de]) faltaTC[de]=1; if(mon !== 'ARS' && de !== mon && !(inm.tcRef||{})[mon]) faltaTC[mon]=1; return invConvertir(m, de, mon, inm); };
+
+  var invertido = invs.reduce(function(s,x){ return s + conv(Number(x.monto)||0, x.moneda||'ARS'); }, 0);
+  var desde = invs[0].fecha || '';
+
+  // Ingresos: pagos recibidos de los contratos del inmueble desde la primera inversión
+  var cts = DB.contratos.filter(function(c){ return c.inmId === inmId; });
+  var ingresos = 0;
+  DB.cobros.forEach(function(c) {
+    var ct = cts.find(function(x){ return x.id === c.ctId; }); if(!ct) return;
+    var m = monedaCobro(c);
+    if(c.pagos && c.pagos.length) {
+      c.pagos.forEach(function(p){ if(String(p.fecha||'') >= desde) ingresos += conv(Number(p.monto)||0, m); });
+    } else if(c.estado === 'cobrado' && String(c.fechaPago || c.vence || '') >= desde) {
+      ingresos += conv(Number(c.montoPagado || c.monto) || 0, m);
+    }
+  });
+  // Gastos corrientes del inmueble desde la primera inversión (en pesos)
+  var gastos = DB.gastos.filter(function(g){ return g.inmId === inmId && String(g.fecha||'') >= desde; })
+    .reduce(function(s,g){ return s + conv(Number(g.monto)||0, 'ARS'); }, 0);
+
+  var recuperado = Math.max(0, ingresos - gastos);
+  var falta = Math.max(0, invertido - recuperado);
+  var ctVig = cts.find(function(c){ return c.estado === 'vigente'; });
+  var alquiler = ctVig ? conv(Number(ctVig.monto)||0, monedaCt(ctVig)) : 0;
+  var meses = alquiler > 0 ? Math.ceil(falta / alquiler) : null;
+  var fechaEst = null;
+  if(meses !== null) { var d = new Date(); d.setMonth(d.getMonth() + meses); fechaEst = MESES_ES[d.getMonth()] + ' ' + d.getFullYear(); }
+  return {
+    invs:invs, moneda:mon, invertido:invertido, ingresos:ingresos, gastos:gastos, recuperado:recuperado, falta:falta,
+    pct: invertido ? Math.min(100, Math.round(recuperado / invertido * 100)) : 0,
+    alquiler:alquiler, meses:meses, fechaEst:fechaEst, desde:desde,
+    rentaAnual: invertido && alquiler ? Math.round(alquiler * 12 / invertido * 1000) / 10 : null,
+    faltaTC:Object.keys(faltaTC), ctVig:ctVig
+  };
+}
+
+function renderInversiones(el, inmId) {
+  var inm = getInm(inmId); if(!el || !inm) return;
+  var r = invResumen(inmId);
+  var M = r.moneda, f = function(n){ return fmtMoneda(Math.round(n), M); };
+  var card = function(lbl, val, sub, bg, col){ return '<div style="background:' + bg + ';border-radius:var(--radius);padding:14px"><div style="font-size:11px;font-weight:700;color:' + col + ';text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">' + lbl + '</div><div style="font-size:20px;font-weight:600;color:' + col + '">' + val + '</div>' + (sub ? '<div style="font-size:11.5px;color:var(--text3);margin-top:4px">' + sub + '</div>' : '') + '</div>'; };
+
+  // Sugerencia: impuestos que en realidad son inversiones
+  var sugeridos = (DB.impuestos||[]).filter(function(x){ return x.inmId === inmId && /reform|invers|mueble|compra|electro|lavarrop|sof[aá]|pintur|obra/i.test(x.nombre||''); });
+
+  var html = '';
+  sugeridos.forEach(function(x) {
+    html += '<div style="background:var(--amber-light);color:var(--amber);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:12.5px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">' +
+      '<span>"' + h(x.nombre) + '" está cargado como impuesto. ¿Es una inversión?</span>' +
+      '<button class="btn btn-secondary" style="font-size:12px" onclick="invMoverDesdeImpuesto(' + x.id + ',' + inmId + ')">Mover a Inversión</button></div>';
+  });
+
+  if(r.invs.length) {
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">' +
+      card('Invertido', f(r.invertido), r.invs.length + ' concepto' + (r.invs.length!==1?'s':'') + ' desde ' + h(String(r.desde).split('-').reverse().join('/')), 'var(--blue-light)', 'var(--blue)') +
+      card('Recuperado', f(r.recuperado), 'Cobros ' + f(r.ingresos) + (r.gastos ? ' − gastos ' + f(r.gastos) : ''), 'var(--green-light)', 'var(--green)') +
+      card('Falta recuperar', f(r.falta), r.pct + '% recuperado', 'var(--amber-light)', 'var(--amber)') +
+      card('Recupero estimado', r.falta <= 0 ? '✓ Recuperada' : (r.fechaEst || '—'),
+        r.falta <= 0 ? '' : (r.meses !== null ? 'en ' + r.meses + ' mes' + (r.meses!==1?'es':'') + ' con alquiler de ' + f(r.alquiler) : (r.ctVig ? 'completá el tipo de cambio abajo' : 'sin contrato vigente para estimar')),
+        'var(--accent-light)', 'var(--accent-dark)') +
+      '</div>' +
+      '<div style="height:10px;background:var(--surface2);border-radius:6px;overflow:hidden;margin-bottom:6px"><div style="height:100%;width:' + r.pct + '%;background:linear-gradient(90deg,#4F46E5,#A855F7)"></div></div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-bottom:16px">' + (r.rentaAnual !== null ? 'Rentabilidad bruta anual sobre lo invertido: <strong>' + r.rentaAnual + '%</strong>' : '') + '</div>';
+  } else {
+    html += '<div style="text-align:center;color:var(--text3);padding:18px;font-size:13px">Todavía no cargaste inversiones en este inmueble.<br>Registrá reformas, mobiliario o compras puntuales para ver cuánto tardás en recuperarlas.</div>';
+  }
+
+  // Tipo de cambio si hay monedas mezcladas
+  var monedasUsadas = {}; r.invs.forEach(function(x){ monedasUsadas[x.moneda||'ARS']=1; });
+  if(r.ctVig) monedasUsadas[monedaCt(r.ctVig)] = 1;
+  var extranjeras = Object.keys(monedasUsadas).filter(function(m){ return m !== 'ARS'; });
+  if(Object.keys(monedasUsadas).length > 1 && extranjeras.length) {
+    html += '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px">' +
+      '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Hay montos en distintas monedas. Tipo de cambio de referencia para el cálculo:' +
+      (r.faltaTC.length ? ' <strong style="color:var(--red)">falta completarlo</strong>' : '') + '</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">' + extranjeras.map(function(m){
+        return '<label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--text2)">1 ' + m + ' = $ <input type="number" min="0" value="' + ((inm.tcRef||{})[m]||'') + '" style="width:120px" onchange="invSetTC(' + inmId + ',\'' + m + '\',this.value)"></label>';
+      }).join('') + '</div></div>';
+  }
+
+  // Formulario de alta / edición
+  html += '<div id="inv-form-' + inmId + '" style="display:none;border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px;background:var(--surface)"></div>';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Inversiones registradas</div>' +
+    '<button class="btn btn-primary" style="font-size:12px" onclick="invAbrirForm(' + inmId + ')">+ Agregar inversión</button></div>';
+
+  html += r.invs.slice().reverse().map(function(x) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px">' +
+      '<div style="min-width:0"><div style="font-size:13.5px;font-weight:500">' + h(x.concepto) + ' <span class="badge badge-blue" style="font-size:10.5px">' + h(x.cat||'Otro') + '</span></div>' +
+      '<div style="font-size:12px;color:var(--text3)">' + h(String(x.fecha||'').split('-').reverse().join('/')) + (x.notas ? ' · ' + h(x.notas) : '') + '</div></div>' +
+      '<div style="display:flex;align-items:center;gap:4px;white-space:nowrap"><strong style="font-size:14px">' + fmtMoneda(x.monto, x.moneda||'ARS') + '</strong>' +
+      '<button class="btn btn-ghost" style="font-size:12px;padding:4px 8px" onclick="invAbrirForm(' + inmId + ',' + x.id + ')" aria-label="Editar inversión">✏</button>' +
+      '<button class="btn btn-ghost" style="font-size:12px;padding:4px 8px;color:var(--red)" onclick="invEliminar(' + inmId + ',' + x.id + ')" aria-label="Eliminar inversión">🗑</button></div></div>';
+  }).join('');
+
+  el.innerHTML = html;
+}
+
+function invAbrirForm(inmId, invId) {
+  var inm = getInm(inmId); var box = document.getElementById('inv-form-' + inmId); if(!inm || !box) return;
+  var x = invId ? (inm.inversiones||[]).find(function(i){ return i.id === invId; }) : null;
+  var mon = x ? x.moneda : 'ARS';
+  box.style.display = 'block';
+  box.innerHTML =
+    '<div style="font-weight:600;font-size:14px;margin-bottom:10px">' + (x ? 'Editar inversión' : 'Nueva inversión') + '</div>' +
+    '<div class="form-grid">' +
+    '<div class="form-field full"><label for="inv-concepto">Concepto *</label><input id="inv-concepto" type="text" placeholder="Ej: Pintura completa y cambio de pisos" value="' + h(x ? x.concepto : '') + '"></div>' +
+    '<div class="form-field"><label for="inv-cat">Categoría</label><select id="inv-cat">' + INV_CATS.map(function(c){ return '<option' + (x && x.cat===c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select></div>' +
+    '<div class="form-field"><label for="inv-fecha">Fecha</label><input id="inv-fecha" type="date" value="' + h(x ? x.fecha : hoyISO()) + '"></div>' +
+    '<div class="form-field"><label for="inv-monto">Monto *</label><div style="display:flex;gap:6px">' + selectMoneda('inv-moneda', mon) + '<input id="inv-monto" type="number" min="0" inputmode="decimal" value="' + (x ? x.monto : '') + '" style="flex:1;min-width:0"></div></div>' +
+    '<div class="form-field"><label for="inv-notas">Notas (opcional)</label><input id="inv-notas" type="text" placeholder="Proveedor, factura…" value="' + h(x ? (x.notas||'') : '') + '"></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">' +
+      '<button class="btn btn-secondary" onclick="document.getElementById(\'inv-form-' + inmId + '\').style.display=\'none\'">Cancelar</button>' +
+      '<button class="btn btn-green" onclick="invGuardar(' + inmId + ',' + (invId||0) + ')">Guardar</button></div>';
+  box.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  setTimeout(function(){ var c = document.getElementById('inv-concepto'); if(c) c.focus(); }, 50);
+}
+
+function invGuardar(inmId, invId) {
+  var inm = getInm(inmId); if(!inm) return;
+  var concepto = document.getElementById('inv-concepto').value.trim();
+  var monto = parseFloat(document.getElementById('inv-monto').value) || 0;
+  if(!concepto) { toast('Ingresá el concepto','error'); return; }
+  if(monto <= 0) { toast('Ingresá el monto','error'); return; }
+  if(!inm.inversiones) inm.inversiones = [];
+  var datos = { concepto:concepto, cat:document.getElementById('inv-cat').value, fecha:document.getElementById('inv-fecha').value || hoyISO(),
+    monto:monto, moneda:document.getElementById('inv-moneda').value, notas:document.getElementById('inv-notas').value.trim() };
+  var x = invId ? inm.inversiones.find(function(i){ return i.id === invId; }) : null;
+  if(x) Object.assign(x, datos); else inm.inversiones.push(Object.assign({ id:Date.now() }, datos));
+  saveDB();
+  renderInversiones(document.getElementById('inm-tab-3-' + inmId), inmId);
+  toast(x ? 'Inversión actualizada ✓' : 'Inversión registrada ✓','success');
+}
+
+function invEliminar(inmId, invId) {
+  var inm = getInm(inmId); if(!inm) return;
+  var x = (inm.inversiones||[]).find(function(i){ return i.id === invId; }); if(!x) return;
+  if(!confirm('¿Eliminar la inversión "' + x.concepto + '" (' + fmtMoneda(x.monto, x.moneda||'ARS') + ')?')) return;
+  inm.inversiones = inm.inversiones.filter(function(i){ return i.id !== invId; });
+  saveDB(); renderInversiones(document.getElementById('inm-tab-3-' + inmId), inmId);
+  toast('Inversión eliminada','success');
+}
+
+function invSetTC(inmId, mon, val) {
+  var inm = getInm(inmId); if(!inm) return;
+  if(!inm.tcRef) inm.tcRef = {};
+  inm.tcRef[mon] = parseFloat(val) || 0;
+  saveDB(); renderInversiones(document.getElementById('inm-tab-3-' + inmId), inmId);
+}
+
+function invMoverDesdeImpuesto(impId, inmId) {
+  var imp = (DB.impuestos||[]).find(function(x){ return x.id === impId; }); var inm = getInm(inmId);
+  if(!imp || !inm) return;
+  if(!confirm('¿Mover "' + imp.nombre + '" (' + fmtPeso(imp.monto||0) + ') de Impuestos a Inversiones? Se quitará de Impuestos y de su calendario.')) return;
+  if(!inm.inversiones) inm.inversiones = [];
+  inm.inversiones.push({ id:Date.now(), concepto:imp.nombre, cat:/mueble|sof|cama|lavarrop|electro/i.test(imp.nombre) && !/reform|pintur/i.test(imp.nombre) ? 'Mobiliario' : 'Reforma',
+    fecha:hoyISO(), monto:Number(imp.monto)||0, moneda:'ARS', notas:imp.obs||'' });
+  DB.impuestos = DB.impuestos.filter(function(x){ return x.id !== impId; });
+  DB.pagoImpuestos = (DB.pagoImpuestos||[]).filter(function(p){ return p.impId !== impId && p.impuestoId !== impId; });
+  saveDB(); renderInversiones(document.getElementById('inm-tab-3-' + inmId), inmId);
+  toast('Movido a Inversiones ✓ — revisá la fecha de la inversión','success');
 }
 
 // ── IMPUESTOS LIST ───────────────────────────────────────────────
@@ -7090,28 +7294,92 @@ function periodoLabel(periodo) {
   return (meses[mes-1]||'') + ' ' + anio;
 }
 
+// Monto efectivamente pagado de un cobro dentro del período (YYYY-MM), por fecha de pago.
+// Cuenta pagos parciales (cobro.pagos) y cobros viejos marcados como cobrados.
+function liqPagadoEnPeriodo(c, periodo) {
+  if(c.pagos && c.pagos.length) {
+    return c.pagos.filter(function(p){ return String(p.fecha||'').indexOf(periodo) === 0; })
+      .reduce(function(s,p){ return s + (Number(p.monto)||0); }, 0);
+  }
+  if(c.estado === 'cobrado') {
+    var f = String(c.fechaPago || c.vence || '');
+    return f.indexOf(periodo) === 0 ? (Number(c.montoPagado || c.monto) || 0) : 0;
+  }
+  return 0;
+}
+
 // Junta, por cada inmueble del locador, lo cobrado en el período y los gastos candidatos a descontar
 function liquidacionArmarItems(locadorId, periodo) {
   var loc = getLoc(locadorId);
-  var inms = DB.inmuebles.filter(function(i){ return i.locadorId === locadorId; });
-  return inms.map(function(inm) {
-    var cobrosInm = DB.cobros.filter(function(c) {
-      if(c.estado !== 'cobrado') return false;
-      var ct = getCt(c.ctId);
-      if(!ct || ct.inmId !== inm.id) return false;
-      var fechaRef = c.fechaPago || c.vence || '';
-      return fechaRef.indexOf(periodo) === 0;
+  var inms = DB.inmuebles.filter(function(i){ return String(i.locadorId) === String(locadorId); });
+  var items = inms.map(function(inm) {
+    var cts = DB.contratos.filter(function(ct){ return ct.inmId === inm.id; });
+    var detalle = [];
+    var cobrado = 0;
+    DB.cobros.forEach(function(c) {
+      var ct = cts.find(function(x){ return x.id === c.ctId; }); if(!ct) return;
+      var m = liqPagadoEnPeriodo(c, periodo); if(!m) return;
+      var inq = getInq(ct.inqId);
+      cobrado += m;
+      detalle.push({ cobroId:c.id, mes:String(c.mes).replace(/\s+/g,' '), inquilino: inq ? inq.nombre : '—', monto:m });
     });
-    var cobrado = cobrosInm.reduce(function(s,c){ return s+c.monto; }, 0);
+    var ctVig = cts.find(function(ct){ return ct.estado === 'vigente'; });
     var gastosInm = DB.gastos.filter(function(g){ return g.inmId===inm.id && (g.fecha||'').indexOf(periodo)===0; });
     return {
       inmId: inm.id,
       dir: inm.dir,
+      moneda: ctVig ? monedaCt(ctVig) : (inm.moneda || 'ARS'),
       cobrado: cobrado,
+      detalle: detalle,
+      tieneContrato: !!ctVig,
       comisionPct: (loc && loc.comisionDefault) || 0,
       gastosDisponibles: gastosInm.map(function(g){ return {id:g.id, concepto:g.concepto, monto:g.monto, incluido:true}; })
     };
   });
+  // Solo inmuebles con movimiento o con contrato vigente; primero los que cobraron
+  return items.filter(function(it){ return it.cobrado > 0 || it.gastosDisponibles.length || it.tieneContrato; })
+    .sort(function(a,b){ return b.cobrado - a.cobrado; });
+}
+
+// Totales por moneda: {ARS:{cobrado,comision,gastos,neto}, USD:{...}}
+function liqTotalesPorMoneda(items) {
+  var t = {};
+  items.forEach(function(it) {
+    var m = it.moneda || 'ARS';
+    if(!t[m]) t[m] = { cobrado:0, comision:0, gastos:0, neto:0 };
+    var comision = Math.round(it.cobrado * ((it.comisionPct||0)/100));
+    var gastos = (it.gastosIncluidos || it.gastosDisponibles.filter(function(g){ return g.incluido; })).reduce(function(s,g){ return s+g.monto; }, 0);
+    t[m].cobrado += it.cobrado; t[m].comision += comision; t[m].gastos += gastos; t[m].neto += it.cobrado - comision - gastos;
+  });
+  return t;
+}
+function liqFmtTotal(liq, campo) {
+  if(liq.totales) {
+    var map = {}; Object.keys(liq.totales).forEach(function(m){ map[m] = liq.totales[m][campo]; });
+    var ks = Object.keys(map).filter(function(k){ return map[k]; });
+    return ks.length ? fmtMultiMoneda(map) : fmtMoneda(0, Object.keys(liq.totales)[0] || 'ARS');
+  }
+  var key = { cobrado:'totalCobrado', comision:'totalComision', gastos:'totalGastos', neto:'totalNeto' }[campo];
+  return fmtPeso(liq[key] || 0);
+}
+
+// Vista previa en la tarjeta "Nueva liquidación"
+function liqPreview() {
+  var el = document.getElementById('liq-preview'); if(!el) return;
+  var locSel = document.getElementById('liq-locador'), perSel = document.getElementById('liq-periodo');
+  if(!locSel || !locSel.value || !perSel.value) { el.innerHTML = ''; return; }
+  var items = liquidacionArmarItems(parseFloat(locSel.value), perSel.value);
+  var conCobro = items.filter(function(it){ return it.cobrado > 0; });
+  var pagos = conCobro.reduce(function(s,it){ return s + it.detalle.length; }, 0);
+  var t = liqTotalesPorMoneda(items); var map = {}; Object.keys(t).forEach(function(m){ map[m] = t[m].cobrado; });
+  var ya = (DB.liquidaciones||[]).some(function(l){ return String(l.locadorId) === String(locSel.value) && l.periodo === perSel.value; });
+  if(!items.length) {
+    el.innerHTML = '<div style="background:var(--amber-light);color:var(--amber);border-radius:var(--radius);padding:10px 14px;font-size:12.5px">Este locador no tiene inmuebles asignados. Asignalo desde <strong>Inmuebles → Editar → Locador</strong>.</div>';
+    return;
+  }
+  el.innerHTML = conCobro.length
+    ? '<div style="background:var(--green-light);color:var(--green);border-radius:var(--radius);padding:10px 14px;font-size:12.5px">✓ <strong>' + fmtMultiMoneda(map) + '</strong> cobrado en ' + h(periodoLabel(perSel.value)) + ' · ' + pagos + ' pago' + (pagos!==1?'s':'') + ' en ' + conCobro.length + ' de ' + items.length + ' inmuebles' + (ya ? ' · <span style="color:var(--amber)">ya existe una liquidación de este período</span>' : '') + '</div>'
+    : '<div style="background:var(--amber-light);color:var(--amber);border-radius:var(--radius);padding:10px 14px;font-size:12.5px">No hay pagos registrados en ' + h(periodoLabel(perSel.value)) + ' para los ' + items.length + ' inmuebles de este locador. La liquidación toma los pagos por <strong>fecha de pago</strong>: registralos en <a href="#" onclick="nav(\'facturacion\');return false">Facturación</a> o probá con otro período.</div>';
 }
 
 function liqItemNeto(item) {
@@ -7126,7 +7394,7 @@ function confirmDelLiquidacion(id) {
   var body = document.createElement('div'); body.style.cssText = 'text-align:center;padding:10px 0';
   body.innerHTML = '<div style="font-size:40px;margin-bottom:14px">⚠️</div>' +
     '<div style="font-family:var(--serif);font-size:18px;margin-bottom:8px">¿Eliminar esta liquidación?</div>' +
-    '<p style="font-size:13px;color:var(--text3)">'+h(loc?loc.nombre:'—')+' · '+h(periodoLabel(liq.periodo))+' · '+fmtPeso(liq.totalNeto)+'</p>' +
+    '<p style="font-size:13px;color:var(--text3)">'+h(loc?loc.nombre:'—')+' · '+h(periodoLabel(liq.periodo))+' · '+liqFmtTotal(liq,'neto')+'</p>' +
     '<p style="font-size:13px;color:var(--text3)">Esta acción no se puede deshacer.</p>';
   var footer = modalFooter([{label:'Sí, eliminar', cls:'btn-danger', action:function(){
     var idx = DB.liquidaciones.findIndex(function(l){ return l.id===id; });
@@ -7152,9 +7420,9 @@ function pgLiquidaciones(el) {
     return '<tr>' +
       '<td style="font-weight:500">'+h(loc?loc.nombre:'—')+'</td>' +
       '<td style="font-size:12px">'+h(periodoLabel(liq.periodo))+'</td>' +
-      '<td style="font-size:12px">'+fmtPeso(liq.totalCobrado)+'</td>' +
-      '<td style="font-size:12px;color:var(--text3)">'+fmtPeso(liq.totalComision)+'</td>' +
-      '<td style="font-weight:600;color:var(--green)">'+fmtPeso(liq.totalNeto)+'</td>' +
+      '<td style="font-size:12px">'+liqFmtTotal(liq,'cobrado')+'</td>' +
+      '<td style="font-size:12px;color:var(--text3)">'+liqFmtTotal(liq,'comision')+'</td>' +
+      '<td style="font-weight:600;color:var(--green)">'+liqFmtTotal(liq,'neto')+'</td>' +
       '<td>'+badge+'</td>' +
       '<td>'+envioBadge+'</td>' +
       '<td style="white-space:nowrap">' +
@@ -7167,15 +7435,19 @@ function pgLiquidaciones(el) {
       '</td></tr>';
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Todavía no generaste ninguna liquidación</td></tr>';
 
-  var locOpts = (DB.locadores||[]).map(function(l){ return '<option value="'+l.id+'">'+h(l.nombre)+'</option>'; }).join('');
+  var nInm = function(l){ return DB.inmuebles.filter(function(i){ return String(i.locadorId) === String(l.id); }).length; };
+  var locDef = (DB.locadores||[]).slice().sort(function(a,b){ return nInm(b) - nInm(a); })[0];
+  var locOpts = (DB.locadores||[]).map(function(l){ var n = nInm(l); return '<option value="'+l.id+'"'+(locDef && l.id===locDef.id?' selected':'')+'>'+h(l.nombre)+' ('+n+' inmueble'+(n!==1?'s':'')+')</option>'; }).join('');
   var hoy = new Date();
   var defaultPeriodo = hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
 
   // ── Resumen para la agencia ──
-  var cobradoHistorico = liqs.reduce(function(s,l){ return s+l.totalCobrado; }, 0);
-  var comisionHistorica = liqs.reduce(function(s,l){ return s+l.totalComision; }, 0);
-  var comisionEsteMes = liqs.filter(function(l){ return l.periodo===defaultPeriodo; }).reduce(function(s,l){ return s+l.totalComision; }, 0);
-  var netoHistorico = liqs.reduce(function(s,l){ return s+l.totalNeto; }, 0);
+  // Totales en pesos (las liquidaciones en otra moneda se ven en su fila)
+  var ars = function(l, campo, legacy){ return l.totales ? ((l.totales.ARS||{})[campo]||0) : (l[legacy]||0); };
+  var cobradoHistorico = liqs.reduce(function(s,l){ return s+ars(l,'cobrado','totalCobrado'); }, 0);
+  var comisionHistorica = liqs.reduce(function(s,l){ return s+ars(l,'comision','totalComision'); }, 0);
+  var comisionEsteMes = liqs.filter(function(l){ return l.periodo===defaultPeriodo; }).reduce(function(s,l){ return s+ars(l,'comision','totalComision'); }, 0);
+  var netoHistorico = liqs.reduce(function(s,l){ return s+ars(l,'neto','totalNeto'); }, 0);
   var pendRevisar = liqs.filter(function(l){ return l.estado==='revisar'; }).length;
   var pendEnvio = liqs.filter(function(l){ return !liqEstaEnviada(l); }).length;
 
@@ -7218,11 +7490,11 @@ function pgLiquidaciones(el) {
     '<div class="card" style="margin-bottom:20px">' +
     '<div class="card-header"><div class="card-title">Nueva liquidación</div></div>' +
     '<div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">' +
-    '<div class="form-field" style="margin:0;min-width:200px"><label>Locador</label><select id="liq-locador">'+locOpts+'</select></div>' +
-    '<div class="form-field" style="margin:0"><label>Período</label><input id="liq-periodo" type="month" value="'+defaultPeriodo+'"></div>' +
+    '<div class="form-field" style="margin:0;min-width:200px;flex:1 1 260px"><label for="liq-locador">Locador</label><select id="liq-locador" onchange="liqPreview()">'+locOpts+'</select></div>' +
+    '<div class="form-field" style="margin:0"><label for="liq-periodo">Período (mes de pago)</label><input id="liq-periodo" type="month" value="'+defaultPeriodo+'" onchange="liqPreview()"></div>' +
     '<button class="btn btn-primary" onclick="abrirGeneracionLiquidacion()">Generar</button>' +
     '<button class="btn btn-secondary" onclick="generarLiquidacionesMasivo()" title="Genera una liquidación borrador para todos los locadores con cobros o gastos en el período elegido">⚡ Generar todas (período elegido)</button>' +
-    '</div></div>' +
+    '</div><div id="liq-preview" style="margin-top:14px"></div></div>' +
     (DB.locadores&&DB.locadores.length ? '' : '<div style="background:var(--amber-light);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--amber)">Todavía no hay locadores cargados. Agregá uno en la sección Locadores.</div>') +
 
     '<div class="card" style="margin-bottom:20px">' +
@@ -7232,18 +7504,20 @@ function pgLiquidaciones(el) {
 
     '<div class="table-wrap"><table><thead><tr><th>Locador</th><th>Período</th><th>Cobrado</th><th>Comisión</th><th>Neto</th><th>Estado</th><th>Envío</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
     '</div>';
+  liqPreview();
 }
 
 function abrirGeneracionLiquidacion() {
   var locSel = document.getElementById('liq-locador');
   var perSel = document.getElementById('liq-periodo');
   if(!locSel || !locSel.value) { toast('No hay locadores para elegir','error'); return; }
-  var locId = parseInt(locSel.value);
+  var locId = parseFloat(locSel.value);
   var periodo = perSel.value;
   if(!periodo) { toast('Elegí un período','error'); return; }
   var loc = getLoc(locId);
   var items = liquidacionArmarItems(locId, periodo);
-  if(!items.length) { toast('Ese locador no tiene inmuebles asignados','error'); return; }
+  if(!items.length) { toast('Ese locador no tiene inmuebles con contrato ni movimientos','error'); return; }
+  if(!items.some(function(it){ return it.cobrado > 0; }) && !confirm('No hay pagos registrados en ' + periodoLabel(periodo) + ' para este locador. ¿Generar igual la liquidación en $0?')) return;
 
   var body = document.createElement('div');
   var header = document.createElement('div');
@@ -7272,12 +7546,12 @@ function abrirGeneracionLiquidacion() {
   body.appendChild(totalRow);
 
   function recalcTotal() {
-    var totalNeto = items.reduce(function(s,it){ return s + liqItemNeto(it); }, 0);
-    var totalComision = items.reduce(function(s,it){ return s + Math.round(it.cobrado*((it.comisionPct||0)/100)); }, 0);
+    var t = liqTotalesPorMoneda(items), neto = {}, com = {};
+    Object.keys(t).forEach(function(m){ neto[m] = t[m].neto; com[m] = t[m].comision; });
     var netoEl = body.querySelector('#liq-total-neto');
-    netoEl.textContent = fmtPeso(totalNeto);
-    netoEl.style.color = totalNeto >= 0 ? 'var(--green)' : 'var(--red)';
-    body.querySelector('#liq-total-comision').textContent = fmtPeso(totalComision);
+    netoEl.textContent = fmtMultiMoneda(neto);
+    netoEl.style.color = Object.keys(neto).every(function(m){ return neto[m] >= 0; }) ? 'var(--green)' : 'var(--red)';
+    body.querySelector('#liq-total-comision').textContent = fmtMultiMoneda(com);
   }
 
   var rowRefs = items.map(function(item) {
@@ -7319,7 +7593,7 @@ function buildLiqItemRow(item, onChange) {
   var gastosHtml = item.gastosDisponibles.length ?
     item.gastosDisponibles.map(function(g,gi){
       return '<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0">' +
-        '<input type="checkbox" checked data-gasto-idx="'+gi+'"> ' + h(g.concepto) + ' — ' + fmtPeso(g.monto) +
+        '<input type="checkbox" checked data-gasto-idx="'+gi+'" style="width:auto"> ' + h(g.concepto) + ' — ' + fmtMoneda(g.monto, item.moneda) +
         '</label>';
     }).join('') :
     '<div style="font-size:12px;color:var(--text3)">Sin gastos registrados este período</div>';
@@ -7327,8 +7601,9 @@ function buildLiqItemRow(item, onChange) {
   row.innerHTML =
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
     '<div style="font-weight:500;font-size:14px">'+h(item.dir.split(',')[0])+'</div>' +
-    '<div style="font-size:13px;color:var(--green);font-weight:500">Cobrado: '+fmtPeso(item.cobrado)+'</div>' +
+    '<div style="font-size:13px;color:'+(item.cobrado?'var(--green)':'var(--text3)')+';font-weight:500">Cobrado: '+fmtMoneda(item.cobrado, item.moneda)+'</div>' +
     '</div>' +
+    (item.detalle && item.detalle.length ? '<div style="font-size:12px;color:var(--text3);margin:-4px 0 10px">' + item.detalle.map(function(d){ return h(d.inquilino) + ' · ' + h(d.mes) + ' · ' + fmtMoneda(d.monto, item.moneda); }).join('<br>') + '</div>' : '<div style="font-size:12px;color:var(--text3);margin:-4px 0 10px">Sin pagos registrados en el período</div>') +
     '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">' +
     '<div class="form-field" style="margin:0;width:110px"><label style="font-size:11px">Comisión %</label>' +
     '<input type="number" min="0" max="100" step="0.5" value="'+item.comisionPct+'" data-comision-input></div>' +
@@ -7348,7 +7623,7 @@ function buildLiqItemRow(item, onChange) {
       item.gastosDisponibles[gi].incluido = cb.checked;
     });
     var neto = liqItemNeto(item);
-    netoEl.textContent = fmtPeso(neto);
+    netoEl.textContent = fmtMoneda(neto, item.moneda);
     netoEl.style.color = neto >= 0 ? 'var(--green)' : 'var(--red)';
     if(onChange) onChange();
   }
@@ -7386,7 +7661,7 @@ function guardarLiquidacion(locId, periodo, items, estado, extra) {
     var neto = item.cobrado - comision - gastos;
     totalCobrado += item.cobrado; totalComision += comision; totalGastos += gastos; totalNeto += neto;
     return {
-      inmId: item.inmId, dir: item.dir, cobrado: item.cobrado,
+      inmId: item.inmId, dir: item.dir, cobrado: item.cobrado, moneda: item.moneda || 'ARS', detalle: item.detalle || [],
       comisionPct: item.comisionPct, comision: comision,
       gastosIncluidos: gastosIncluidos.map(function(g){ return {id:g.id, concepto:g.concepto, monto:g.monto}; }),
       gastos: gastos, neto: neto
@@ -7397,6 +7672,7 @@ function guardarLiquidacion(locId, periodo, items, estado, extra) {
     id: newId, locadorId: locId, periodo: periodo, fecha: new Date().toISOString().slice(0,10),
     items: itemsOut,
     totalCobrado: totalCobrado, totalComision: totalComision, totalGastos: totalGastos, totalNeto: totalNeto,
+    totales: liqTotalesPorMoneda(itemsOut),
     estado: estado || 'borrador',
     fechaPago: (extra && extra.fechaPago) || null,
     medioPago: (extra && extra.medioPago) || null,
@@ -7441,10 +7717,10 @@ function verLiquidacion(id) {
   var rows = liq.items.map(function(it) {
     return '<tr>' +
       '<td>'+h(it.dir.split(',')[0])+'</td>' +
-      '<td style="text-align:right">'+fmtPeso(it.cobrado)+'</td>' +
-      '<td style="text-align:right">'+fmtPeso(it.comision)+' <span style="color:var(--text3);font-size:11px">('+it.comisionPct+'%)</span></td>' +
-      '<td style="text-align:right">'+fmtPeso(it.gastos)+'</td>' +
-      '<td style="text-align:right;font-weight:600">'+fmtPeso(it.neto)+'</td>' +
+      '<td style="text-align:right">'+fmtMoneda(it.cobrado, it.moneda)+'</td>' +
+      '<td style="text-align:right">'+fmtMoneda(it.comision, it.moneda)+' <span style="color:var(--text3);font-size:11px">('+it.comisionPct+'%)</span></td>' +
+      '<td style="text-align:right">'+fmtMoneda(it.gastos, it.moneda)+'</td>' +
+      '<td style="text-align:right;font-weight:600">'+fmtMoneda(it.neto, it.moneda)+'</td>' +
       '</tr>';
   }).join('');
   var body = document.createElement('div');
@@ -7456,10 +7732,10 @@ function verLiquidacion(id) {
     '</div>' +
     '<div class="table-wrap"><table><thead><tr><th>Inmueble</th><th style="text-align:right">Cobrado</th><th style="text-align:right">Comisión</th><th style="text-align:right">Gastos</th><th style="text-align:right">Neto</th></tr></thead><tbody>'+rows+'</tbody></table></div>' +
     '<div style="display:flex;justify-content:flex-end;gap:24px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap">' +
-    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Cobrado a inquilinos</div><div style="font-size:15px;font-weight:500">'+fmtPeso(liq.totalCobrado)+'</div></div>' +
-    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Comisión</div><div style="font-size:15px;font-weight:500;color:var(--accent-dark)">'+fmtPeso(liq.totalComision)+'</div></div>' +
-    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Gastos</div><div style="font-size:15px;font-weight:500;color:var(--red)">'+fmtPeso(liq.totalGastos)+'</div></div>' +
-    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Neto a transferir</div><div style="font-size:20px;font-weight:600;color:var(--green)">'+fmtPeso(liq.totalNeto)+'</div></div>' +
+    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Cobrado a inquilinos</div><div style="font-size:15px;font-weight:500">'+liqFmtTotal(liq,'cobrado')+'</div></div>' +
+    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Comisión</div><div style="font-size:15px;font-weight:500;color:var(--accent-dark)">'+liqFmtTotal(liq,'comision')+'</div></div>' +
+    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Gastos</div><div style="font-size:15px;font-weight:500;color:var(--red)">'+liqFmtTotal(liq,'gastos')+'</div></div>' +
+    '<div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Neto a transferir</div><div style="font-size:20px;font-weight:600;color:var(--green)">'+liqFmtTotal(liq,'neto')+'</div></div>' +
     '</div>' +
     '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">' +
     '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Historial de envío</div>' +
@@ -7509,21 +7785,21 @@ function descargarLiquidacionPDF(id) {
   liq.items.forEach(function(it) {
     if(y > 270) { doc.addPage(); y = 20; }
     doc.text((it.dir.split(',')[0]).substring(0,42), 14, y);
-    doc.text(fmtPeso(it.cobrado), 100, y, {align:'right'});
-    doc.text(fmtPeso(it.comision) + ' (' + it.comisionPct + '%)', 130, y, {align:'right'});
-    doc.text(fmtPeso(it.gastos), 160, y, {align:'right'});
-    doc.text(fmtPeso(it.neto), 195, y, {align:'right'});
+    doc.text(fmtMoneda(it.cobrado, it.moneda), 100, y, {align:'right'});
+    doc.text(fmtMoneda(it.comision, it.moneda) + ' (' + it.comisionPct + '%)', 130, y, {align:'right'});
+    doc.text(fmtMoneda(it.gastos, it.moneda), 160, y, {align:'right'});
+    doc.text(fmtMoneda(it.neto, it.moneda), 195, y, {align:'right'});
     y += 7;
   });
 
   y += 3; doc.setDrawColor(180); doc.line(14, y, 195, y); y += 8;
   doc.setFontSize(10); doc.setFont(undefined,'normal'); doc.setTextColor(80);
-  doc.text('Total cobrado a inquilinos: ' + fmtPeso(liq.totalCobrado), 14, y); y += 6;
-  doc.text('Total comisión de administración: ' + fmtPeso(liq.totalComision), 14, y); y += 6;
-  doc.text('Total gastos descontados: ' + fmtPeso(liq.totalGastos), 14, y); y += 10;
+  doc.text('Total cobrado a inquilinos: ' + liqFmtTotal(liq,'cobrado'), 14, y); y += 6;
+  doc.text('Total comisión de administración: ' + liqFmtTotal(liq,'comision'), 14, y); y += 6;
+  doc.text('Total gastos descontados: ' + liqFmtTotal(liq,'gastos'), 14, y); y += 10;
   doc.setTextColor(20);
   doc.setFontSize(13); doc.setFont(undefined,'bold');
-  doc.text('Total neto a transferir: ' + fmtPeso(liq.totalNeto), 14, y);
+  doc.text('Total neto a transferir: ' + liqFmtTotal(liq,'neto'), 14, y);
 
   var filename = 'Liquidacion_' + (loc ? loc.nombre.replace(/[^a-zA-Z0-9]/g,'_') : 'propietario') + '_' + liq.periodo + '.pdf';
   doc.save(filename);
@@ -7535,10 +7811,10 @@ function mensajeLiquidacion(liq, loc) {
   var propietaria = getDefaultLoc();
   return 'Hola ' + (loc?loc.nombre:'') + ',\n\n' +
     'Te comparto la liquidación de ' + periodoLabel(liq.periodo) + ':\n\n' +
-    '• Cobrado: ' + fmtPeso(liq.totalCobrado) + '\n' +
-    '• Comisión: ' + fmtPeso(liq.totalComision) + '\n' +
-    '• Gastos: ' + fmtPeso(liq.totalGastos) + '\n' +
-    '• Neto a transferir: ' + fmtPeso(liq.totalNeto) + '\n\n' +
+    '• Cobrado: ' + liqFmtTotal(liq,'cobrado') + '\n' +
+    '• Comisión: ' + liqFmtTotal(liq,'comision') + '\n' +
+    '• Gastos: ' + liqFmtTotal(liq,'gastos') + '\n' +
+    '• Neto a transferir: ' + liqFmtTotal(liq,'neto') + '\n\n' +
     'Te adjunto el detalle en PDF.\n\n' +
     'Saludos,\n' + (propietaria.nombre||'');
 }

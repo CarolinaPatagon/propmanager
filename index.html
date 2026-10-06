@@ -2,7 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#18181B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PropManager">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%234F46E5'/%3E%3Cstop%20offset='1'%20stop-color='%23A855F7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='64'%20height='64'%20rx='15'%20fill='url(%23g)'/%3E%3Cg%20transform='translate(12%2012)%20scale(.625)'%20fill='none'%20stroke-width='8'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M8%2029%20L32%209%20L56%2029'%20stroke='%23E0E7FF'/%3E%3Cpath%20d='M21%2057%20V31%20H36%20a9%209%200%200%201%200%2018%20H21'%20stroke='%23fff'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
 <title>PropManager — Gestión Inmobiliaria</title>
 
 <script>
@@ -697,12 +704,124 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
   .stats-grid { grid-template-columns:1fr 1fr; }
   .page-title { font-size:20px; }
 }
+
+/* ══ BRAND — logo A (techo + P, degradé) ══════════════════════ */
+.brand-icon {
+  width:38px; height:38px; border-radius:11px; flex-shrink:0;
+  background: linear-gradient(135deg, #4F46E5 0%, #A855F7 100%);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 4px 14px rgba(124,58,237,.45);
+}
+.brand-icon svg { width:24px; height:24px; }
+.brand-word { font-weight:700; letter-spacing:-.02em; color:#FFFFFF; }
+.brand-word span {
+  background: linear-gradient(90deg, #A5B4FC, #F0ABFC);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.sidebar-logo h1.brand-word { font-family:var(--sans); font-size:19px; color:#FFFFFF; }
+.topbar-logo { display:flex; align-items:center; gap:10px; font-family:var(--sans); }
+.topbar-logo .brand-icon { width:32px; height:32px; border-radius:9px; }
+.topbar-logo .brand-icon svg { width:20px; height:20px; }
+.topbar-logo .brand-word { font-size:17px; }
+
+/* ══ BOTTOM NAV + FAB (móvil) ═════════════════════════════════ */
+.bottom-nav { display:none; }
+.fab-desktop {
+  position:fixed; right:24px; bottom:42px; z-index:60;
+  display:flex; align-items:center; gap:8px;
+  padding:12px 18px; border:none; border-radius:999px; cursor:pointer;
+  background: linear-gradient(135deg, #4F46E5, #A855F7); color:#fff;
+  font-family:var(--sans); font-size:13px; font-weight:600;
+  box-shadow:0 8px 24px rgba(79,70,229,.4); transition:transform .15s, box-shadow .15s;
+}
+.fab-desktop:hover { transform:translateY(-2px); box-shadow:0 12px 28px rgba(79,70,229,.5); }
+.fab-desktop svg { width:18px; height:18px; }
+.app-footer { position:fixed; bottom:0; left:240px; right:0; height:26px; background:var(--surface); border-top:1px solid var(--border); display:flex; align-items:center; justify-content:center; z-index:10; }
+
+/* ══ SUBIR COMPROBANTE ════════════════════════════════════════ */
+.drop-zone {
+  border:2px dashed var(--border2); border-radius:14px; padding:18px;
+  display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;
+  background:var(--surface2); transition:all .15s;
+}
+.drop-zone.drag { border-color:var(--accent); background:var(--accent-light); }
+.drop-actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; width:100%; }
+.drop-actions label {
+  display:flex; align-items:center; justify-content:center; gap:8px; flex:1; min-width:140px;
+  min-height:48px; padding:10px 14px; border-radius:12px; cursor:pointer;
+  font-size:14px; font-weight:600; text-transform:none; letter-spacing:0;
+  background:var(--surface); border:1.5px solid var(--border2); color:var(--text);
+}
+.drop-actions label.primary { background: linear-gradient(135deg, #4F46E5, #A855F7); color:#fff; border-color:transparent; }
+.drop-actions label svg { width:18px; height:18px; }
+.comp-thumbs { display:flex; gap:10px; flex-wrap:wrap; width:100%; }
+.comp-thumb {
+  position:relative; width:84px; height:84px; border-radius:10px; overflow:hidden;
+  border:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center;
+  font-size:11px; color:var(--text3); text-align:center; padding:4px;
+}
+.comp-thumb img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+.comp-thumb button {
+  position:absolute; top:4px; right:4px; width:24px; height:24px; border-radius:12px; border:none;
+  background:rgba(24,24,27,.75); color:#fff; font-size:12px; cursor:pointer; z-index:2;
+}
+.saldo-chip { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; background:var(--accent-light); color:var(--accent-dark); }
+
+/* ══ MÓVIL — usabilidad ═══════════════════════════════════════ */
+@media (max-width: 640px) {
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+  .app-footer, .fab-desktop { display:none; }
+  .topbar { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+
+  .bottom-nav {
+    display:grid; grid-template-columns:repeat(5,1fr); align-items:end;
+    position:fixed; left:0; right:0; bottom:0; z-index:70;
+    background:rgba(255,255,255,.96); backdrop-filter:blur(12px);
+    border-top:1px solid var(--border);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+  .bn-item {
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    min-height:52px; justify-content:center; position:relative;
+    border:none; background:none; cursor:pointer; font-family:var(--sans);
+    font-size:10.5px; font-weight:600; color:var(--text3);
+  }
+  .bn-item svg { width:22px; height:22px; }
+  .bn-item.active { color:var(--accent); }
+  .bn-badge { position:absolute; top:2px; left:calc(50% + 6px); min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#DC2626; color:#fff; font-size:9.5px; line-height:16px; display:none; }
+  .bn-fab {
+    width:56px; height:56px; margin:-26px auto 0; border-radius:28px; border:4px solid var(--bg);
+    background: linear-gradient(135deg, #4F46E5, #A855F7); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 20px rgba(79,70,229,.45);
+  }
+  .bn-fab svg { width:24px; height:24px; }
+
+  /* Toques cómodos y sin zoom en iOS */
+  input, select, textarea { font-size:16px; padding:12px 13px; }
+  .btn { min-height:44px; }
+  .nav-item { padding:12px 14px; font-size:14px; }
+
+  /* Modales como hoja inferior, con pie fijo */
+  .modal { display:flex; flex-direction:column; max-height:94dvh; }
+  .modal-header { padding:14px 18px 12px; }
+  .modal-header::after { content:''; position:absolute; top:6px; left:50%; width:40px; height:4px; margin-left:-20px; border-radius:2px; background:var(--border2); }
+  .modal-title { font-size:18px; }
+  .modal-body { flex:1; max-height:none; padding:16px 18px; -webkit-overflow-scrolling:touch; }
+  .modal-footer { padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); flex-wrap:wrap; }
+  .modal-footer > * { width:100%; display:flex; flex-direction:column-reverse; gap:8px; }
+  .modal-footer .btn { width:100%; justify-content:center; }
+
+  .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  .table-wrap { -webkit-overflow-scrolling:touch; }
+  .card { padding:14px !important; }
+}
 </style>
 </head>
 <body>
 <!-- Mobile topbar -->
 <div class="topbar" id="topbar">
-  <div class="topbar-logo">🏢 PropManager</div>
+  <div class="topbar-logo"><div class="brand-icon"><svg viewBox="0 0 64 64" fill="none" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 29 L32 9 L56 29" stroke="#E0E7FF"/><path d="M21 57 V31 H36 a9 9 0 0 1 0 18 H21" stroke="#FFFFFF"/></svg></div><div class="brand-word">Prop<span>Manager</span></div></div>
   <button class="topbar-btn" onclick="toggleSidebar()" aria-label="Menu">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20">
       <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -715,8 +834,8 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <div class="logo-mark">
-        <div class="logo-icon">🏢</div>
-        <h1>PropManager</h1>
+        <div class="brand-icon"><svg viewBox="0 0 64 64" fill="none" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 29 L32 9 L56 29" stroke="#E0E7FF"/><path d="M21 57 V31 H36 a9 9 0 0 1 0 18 H21" stroke="#FFFFFF"/></svg></div>
+        <h1 class="brand-word">Prop<span>Manager</span></h1>
       </div>
       <div class="owner-block">
         <div class="owner-label">Propietaria</div>
@@ -781,11 +900,13 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
   </nav>
   <main class="main" id="main"></main>
 </div>
-<div style="position:fixed;bottom:0;left:232px;right:0;height:26px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;z-index:10">
+<div class="app-footer">
   <span style="font-size:11px;color:var(--text3)">Powered by&nbsp;</span>
   <span style="font-family:var(--serif);font-size:12px;color:var(--gold-dark);font-weight:600">Carolina Gerosa</span>
   <span style="font-size:11px;color:var(--text3)">&nbsp;·&nbsp;PropManager</span>
 </div>
+<nav class="bottom-nav" aria-label="Navegación principal"><button class="bn-item" id="bn-dashboard" onclick="navAndClose('dashboard')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Inicio</button><button class="bn-item" id="bn-facturacion" onclick="navAndClose('facturacion')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>Cobros</button><button class="bn-item" onclick="subirComprobante()" aria-label="Subir comprobante de pago"><span class="bn-fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>Comprobante</button><button class="bn-item" id="bn-alertas" onclick="navAndClose('alertas')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alertas<span class="bn-badge" id="bn-alertas-badge">0</span></button><button class="bn-item" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>Más</button></nav>
+<button class="fab-desktop" onclick="subirComprobante()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>Subir comprobante</button>
 <div class="toast" id="toast"></div>
 <div id="lightbox" onclick="if(event.target===this)closeLB()">
   <button class="lb-btn" id="lb-prev" onclick="lbNav(-1)" style="position:absolute;left:16px">&#8249;</button>
@@ -1034,6 +1155,26 @@ function featById(id) {
 // ============================================================
 function h(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtPeso(n){ return '$' + Number(n).toLocaleString('es-AR'); }
+// ── Monedas ─────────────────────────────────────────────
+var MONEDAS = {
+  ARS: { simb:'$',   nombre:'Pesos Argentinos',        letras:'PESOS',                    corto:'ARS' },
+  USD: { simb:'US$', nombre:'Dólares Estadounidenses', letras:'DÓLARES ESTADOUNIDENSES', corto:'USD' },
+  EUR: { simb:'€',   nombre:'Euros',                   letras:'EUROS',                    corto:'EUR' }
+};
+function monedaInfo(m){ return MONEDAS[m] || MONEDAS.ARS; }
+function fmtMoneda(n, m){ return monedaInfo(m).simb + (m && m !== 'ARS' ? ' ' : '') + Number(n||0).toLocaleString('es-AR'); }
+function monedaCt(ct){ if(!ct) return 'ARS'; if(ct.moneda) return ct.moneda; var inm = getInm(ct.inmId); return (inm && inm.moneda) || 'ARS'; }
+function monedaCobro(c){ return (c && c.moneda) || monedaCt(c ? getCt(c.ctId) : null); }
+function selectMoneda(id, actual){
+  return '<select id="'+id+'" style="max-width:110px">' + Object.keys(MONEDAS).map(function(k){
+    return '<option value="'+k+'"'+((actual||'ARS')===k?' selected':'')+'>'+MONEDAS[k].simb+' '+k+'</option>'; }).join('') + '</select>';
+}
+// Suma montos agrupando por moneda -> "$ 1.200.000 · US$ 750"
+function fmtMultiMoneda(map){
+  var ks = Object.keys(map).filter(function(k){ return map[k]; });
+  if(!ks.length) return fmtMoneda(0,'ARS');
+  return ks.sort(function(a,b){ return a==='ARS'?-1:b==='ARS'?1:a.localeCompare(b); }).map(function(k){ return fmtMoneda(map[k], k); }).join(' · ');
+}
 function toast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast ' + (type||''); t.classList.add('show');
@@ -1041,7 +1182,7 @@ function toast(msg, type) {
 }
 function badge(cls, txt){ return '<span class="badge ' + cls + '">' + h(txt) + '</span>'; }
 function statusBadge(estado) {
-  var m = {alquilado:'badge-green',disponible:'badge-amber',mantenimiento:'badge-gray',vigente:'badge-green',prospecto:'badge-blue',activo:'badge-green',pendiente:'badge-amber',cobrado:'badge-green','en progreso':'badge-blue',resuelto:'badge-green'};
+  var m = {alquilado:'badge-green',disponible:'badge-amber',mantenimiento:'badge-gray',vigente:'badge-green',prospecto:'badge-blue',activo:'badge-green',pendiente:'badge-amber',cobrado:'badge-green','en progreso':'badge-blue',resuelto:'badge-green',vencido:'badge-red',parcial:'badge-blue'};
   return badge(m[estado]||'badge-gray', estado);
 }
 function getInm(id){ return DB.inmuebles.find(function(x){ return x.id===id; }); }
@@ -1101,6 +1242,7 @@ function nav(page) {
   document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.remove('active'); });
   var el = document.getElementById('nav-' + page);
   if(el) el.classList.add('active');
+  document.querySelectorAll('.bn-item').forEach(function(b){ b.classList.toggle('active', b.id === 'bn-' + page); });
   renderPage();
 }
 
@@ -1215,7 +1357,7 @@ function buildInmForm(inm) {
     '<div class="form-field"><label>Dormitorios</label><input id="f-dorm" type="number" placeholder="1" value="' + h(p.dorm||'') + '"></div>',
     '<div class="form-field"><label>Baños</label><input id="f-banos" type="number" placeholder="1" value="' + h(p.banos||'') + '"></div>',
     '<div class="form-field"><label>Piso N°</label><input id="f-piso" type="text" placeholder="4" value="' + h(p.piso||'') + '"></div>',
-    '<div class="form-field"><label>Precio mensual ($)</label><input id="f-precio" type="number" placeholder="280000" value="' + h(p.precio||'') + '"></div>',
+    '<div class="form-field"><label>Precio mensual</label><div style="display:flex;gap:6px">' + selectMoneda('f-moneda', p.moneda) + '<input id="f-precio" type="number" placeholder="280000" value="' + h(p.precio||'') + '" style="flex:1;min-width:0"></div></div>',
     '<div class="form-field"><label>Expensas aprox. ($)</label><input id="f-expensas" type="number" placeholder="45000" value="' + h(p.expensas||'') + '"></div>',
     '<div class="form-field"><label>Estado</label><select id="f-estado">' + estados.map(function(s){ return '<option' + (p.estado===s?' selected':'') + '>' + s + '</option>'; }).join('') + '</select></div>',
     '<div class="form-field"><label>Locador (propietario)</label><select id="f-locador">' +
@@ -1242,6 +1384,7 @@ function readInmForm(wrap) {
     banos: parseInt(wrap.querySelector('#f-banos').value)||0,
     piso: wrap.querySelector('#f-piso').value.trim(),
     precio: parseInt(wrap.querySelector('#f-precio').value)||0,
+    moneda: wrap.querySelector('#f-moneda') ? wrap.querySelector('#f-moneda').value : 'ARS',
     expensas: parseInt(wrap.querySelector('#f-expensas').value)||0,
     estado: wrap.querySelector('#f-estado').value,
     locadorId: parseInt(wrap.querySelector('#f-locador').value) || null,
@@ -2025,6 +2168,8 @@ function updateAlertaBadge() {
     badge.textContent = count;
     badge.style.display = count > 0 ? 'inline-block' : 'none';
   }
+  var bb = document.getElementById('bn-alertas-badge');
+  if(bb) { bb.textContent = count; bb.style.display = count > 0 ? 'block' : 'none'; }
 }
 
 
@@ -2159,7 +2304,7 @@ function propertyCardHTML(p) {
     '<div class="property-body">' +
     '<div class="property-address">' + h(p.dir.split(',')[0]) + '</div>' +
     '<div class="property-type">' + h(p.barrio) + ' · ' + h(p.tipo) + ' · ' + p.m2 + 'm²</div>' +
-    '<div class="property-meta"><div class="property-price">' + fmtPeso(p.precio) + '<span>/mes</span></div>' +
+    '<div class="property-meta"><div class="property-price">' + fmtMoneda(p.precio, p.moneda) + '<span>/mes</span></div>' +
     (p.hab > 0 ? '<span style="font-size:12px;color:var(--text3)">' + p.hab + ' amb.</span>' : '') +
     '</div></div></div>';
 }
@@ -2235,7 +2380,7 @@ function showInmDetail(id) {
   tab0.appendChild(buildPhotoSection(id));
 
   var stats = document.createElement('div'); stats.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px';
-  [['Superficie',p.m2?p.m2+'m²':'—'],['Ambientes',p.hab||'—'],['Precio',fmtPeso(p.precio)]].forEach(function(pair){
+  [['Superficie',p.m2?p.m2+'m²':'—'],['Ambientes',p.hab||'—'],['Precio',fmtMoneda(p.precio, p.moneda)]].forEach(function(pair){
     var d=document.createElement('div'); d.style.cssText='background:var(--surface2);border-radius:var(--radius);padding:12px';
     d.innerHTML='<div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">'+pair[0]+'</div><div style="font-size:16px;font-weight:500">'+pair[1]+'</div>';
     stats.appendChild(d);
@@ -3840,7 +3985,7 @@ function renderWizard() {
         '<div style="font-size:12px;color:var(--text3)">'+h(p.tipo)+' · '+h(p.barrio)+(p.m2?' · '+p.m2+'m²':'')+'</div>' +
         '</div>' +
         '<div style="text-align:right">' +
-        (p.precio?'<div style="font-family:var(--serif);font-size:17px;color:var(--accent-dark)">'+fmtPeso(p.precio)+'</div><div style="font-size:11px;color:var(--text3)">por mes</div>':'') +
+        (p.precio?'<div style="font-family:var(--serif);font-size:17px;color:var(--accent-dark)">'+fmtMoneda(p.precio, p.moneda)+'</div><div style="font-size:11px;color:var(--text3)">por mes</div>':'') +
         '</div>' +
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
         statusBadge(p.estado) +
@@ -3937,7 +4082,7 @@ function renderWizard() {
       '<div class="form-grid">' +
       '<div class="form-field"><label>Fecha de inicio *</label><input id="co-ini" type="date" value="'+(c2.inicio||today)+'"></div>' +
       '<div class="form-field"><label>Fecha de fin *</label><input id="co-fin" type="date" value="'+(c2.fin||endDef)+'"></div>' +
-      '<div class="form-field"><label>Alquiler mensual ($) *</label><input id="co-monto" type="number" value="'+(c2.monto||inm2&&inm2.precio||'')+'" placeholder="0"></div>' +
+      '<div class="form-field"><label>Alquiler mensual *</label><div style="display:flex;gap:6px">'+selectMoneda('co-moneda', c2.moneda||(inm2&&inm2.moneda)||'ARS')+'<input id="co-monto" type="number" value="'+(c2.monto||inm2&&inm2.precio||'')+'" placeholder="0" style="flex:1;min-width:0"></div></div>' +
       '<div class="form-field"><label>Depósito (meses)</label><input id="co-dep" type="number" value="'+(c2.deposito||1)+'" min="1" max="3"></div>' +
       '<div class="form-field"><label>Día de pago (del mes)</label><input id="co-dia" type="number" value="'+(c2.diaPago||10)+'" min="1" max="28"></div>' +
       '<div class="form-field"><label>Actualización</label><select id="co-act">'+
@@ -4013,12 +4158,14 @@ function renderWizard() {
       duracion:       dur4(con4.inicio,con4.fin),
       fechaInicio:    fmt4(con4.inicio),
       fechaFin:       fmt4(con4.fin),
-      montoLetras:    n2w(monto4).toUpperCase()+' PESOS',
+      montoLetras:    n2w(monto4).toUpperCase()+' '+monedaInfo(con4.moneda).letras,
+      monedaSimb:     monedaInfo(con4.moneda).simb,
+      monedaNombre:   monedaInfo(con4.moneda).nombre,
       montoNum:       monto4.toLocaleString('es-AR'),
       diaPago:        con4.diaPago||'10',
       actualizacion:  actMap4[con4.actualizacion]||actMap4['ICL (Índice Casa Propia)'],
       deposito:       String(dep4),
-      depLetras:      n2w(monto4*dep4).toUpperCase()+' PESOS',
+      depLetras:      n2w(monto4*dep4).toUpperCase()+' '+monedaInfo(con4.moneda).letras,
       depNum:         (monto4*dep4).toLocaleString('es-AR'),
       clausulasAd:    con4.clausulas||''
     };
@@ -4037,9 +4184,9 @@ function renderWizard() {
       '<strong>PRIMERA. OBJETO:</strong> EL LOCADOR da en locación a EL LOCATARIO el inmueble ubicado en '+field('inmDir',ct.inmDir,'font-weight:500')+', de la ciudad de '+field('ciudad',ct.ciudad)+', Provincia de '+field('provincia',ct.provincia)+', individualizado como '+field('inmTipo',ct.inmTipo)+', con una superficie aproximada de '+field('inmM2',ct.inmM2)+'. '+field('inmDesc',ct.inmDesc,'min-width:200px')+' Con todos sus servicios funcionando y en buen estado de habitabilidad.',
       '<strong>SEGUNDA. DESTINO:</strong> El inmueble será destinado exclusivamente a '+field('destino',ct.destino,'min-width:120px')+'. Queda prohibido darle un destino distinto sin autorización previa y escrita de EL LOCADOR. EL LOCATARIO no podrá ceder, subarrendar ni transferir el presente contrato bajo apercibimiento de rescisión.',
       '<strong>TERCERA. PLAZO:</strong> La locación tendrá una duración de '+field('duracion',ct.duracion)+', comenzando el día '+field('fechaInicio',ct.fechaInicio)+' y finalizando el día '+field('fechaFin',ct.fechaFin)+', sin necesidad de interpelación alguna. Toda continuidad deberá instrumentarse por escrito.',
-      '<strong>CUARTA. PRECIO Y FORMA DE PAGO:</strong> El canon locativo inicial se fija en la suma de '+field('montoLetras',ct.montoLetras,'font-weight:500')+' ($'+field('montoNum',ct.montoNum)+'), pagadero en Pesos Argentinos, por mes adelantado, del día 1 al día '+field('diaPago',ct.diaPago,'width:30px')+' de cada mes, mediante transferencia bancaria'+(ct.locadorCbu?' al CBU/Alias <strong>'+h(ct.locadorCbu)+'</strong> a nombre de '+h(ct.locadorNombre):'  a la cuenta que EL LOCADOR indique')+'.',
+      '<strong>CUARTA. PRECIO Y FORMA DE PAGO:</strong> El canon locativo inicial se fija en la suma de '+field('montoLetras',ct.montoLetras,'font-weight:500')+' ('+ct.monedaSimb+' '+field('montoNum',ct.montoNum)+'), pagadero en '+ct.monedaNombre+', por mes adelantado, del día 1 al día '+field('diaPago',ct.diaPago,'width:30px')+' de cada mes, mediante transferencia bancaria'+(ct.locadorCbu?' al CBU/Alias <strong>'+h(ct.locadorCbu)+'</strong> a nombre de '+h(ct.locadorNombre):'  a la cuenta que EL LOCADOR indique')+'.',
       '<strong>QUINTA. ACTUALIZACIÓN DEL CANON:</strong> Las partes acuerdan que el canon locativo se actualizará '+field('actualizacion',ct.actualizacion,'min-width:200px')+'. Si el índice pactado dejara de publicarse, las partes deberán acordar por escrito un reemplazo razonable dentro de los 30 días.',
-      '<strong>SEXTA. DEPÓSITO EN GARANTÍA:</strong> EL LOCATARIO entrega en este acto la suma de '+field('depLetras',ct.depLetras)+' ($'+field('depNum',ct.depNum)+') en concepto de depósito en garantía, equivalente a '+field('deposito',ct.deposito,'width:30px')+' mes/es de alquiler. Su devolución procederá dentro de los 30 días de restituido el inmueble, previa verificación del estado de conservación.',
+      '<strong>SEXTA. DEPÓSITO EN GARANTÍA:</strong> EL LOCATARIO entrega en este acto la suma de '+field('depLetras',ct.depLetras)+' ('+ct.monedaSimb+' '+field('depNum',ct.depNum)+') en concepto de depósito en garantía, equivalente a '+field('deposito',ct.deposito,'width:30px')+' mes/es de alquiler. Su devolución procederá dentro de los 30 días de restituido el inmueble, previa verificación del estado de conservación.',
       '<strong>SÉPTIMA. ENTREGA Y ESTADO:</strong> EL LOCATARIO declara recibir el inmueble en buen estado de conservación y funcionamiento. Toda observación inicial deberá asentarse en el acta de entrega dentro de los 5 días desde la toma de posesión.',
       '<strong>OCTAVA. OBLIGACIONES DEL LOCATARIO:</strong> a) Abonar puntualmente el alquiler; b) conservar el inmueble con diligencia; c) informar desperfectos relevantes; d) no alterar el destino; e) permitir inspecciones con 48hs de aviso; f) restituir el inmueble al vencimiento en las mismas condiciones, salvo desgaste normal.',
       '<strong>NOVENA. OBLIGACIONES DEL LOCADOR:</strong> a) Entregar el inmueble en condiciones aptas para el uso convenido; b) garantizar el goce pacífico durante la vigencia; c) asumir las reparaciones estructurales que legalmente le correspondan.',
@@ -4215,6 +4362,7 @@ function ctNext() {
     if(!ini||!fin||!monto){ toast('Completá inicio, fin y monto','error'); return; }
     CONTRACT_DATA.condiciones = {
       inicio:ini, fin:fin, monto:monto,
+      moneda:(document.getElementById('co-moneda')||{}).value||'ARS',
       deposito:document.getElementById('co-dep').value,
       diaPago:document.getElementById('co-dia').value,
       actualizacion:document.getElementById('co-act').value,
@@ -4414,12 +4562,14 @@ async function generateDocx() {
       duracion: ct_ed.duracion || durMeses,
       fechaInicio: ct_ed.fechaInicio || fmtDateES(con.inicio),
       fechaFin: ct_ed.fechaFin || fmtDateES(con.fin),
-      montoLetras: ct_ed.montoLetras || (n2w(monto).toUpperCase() + ' PESOS'),
+      montoLetras: ct_ed.montoLetras || (n2w(monto).toUpperCase() + ' ' + monedaInfo(con.moneda).letras),
+      monedaSimb: monedaInfo(con.moneda).simb,
+      monedaNombre: monedaInfo(con.moneda).nombre,
       montoNum: ct_ed.montoNum || monto.toLocaleString('es-AR'),
       diaPago: ct_ed.diaPago || con.diaPago||'10',
       actualizacion: ct_ed.actualizacion || actTexto,
       deposito: ct_ed.deposito || String(dep),
-      depLetras: ct_ed.depLetras || (n2w(monto * dep).toUpperCase() + ' PESOS'),
+      depLetras: ct_ed.depLetras || (n2w(monto * dep).toUpperCase() + ' ' + monedaInfo(con.moneda).letras),
       depNum: ct_ed.depNum || (monto * dep).toLocaleString('es-AR')
     };
 
@@ -4471,9 +4621,9 @@ async function generateDocx() {
       mixed([r('PRIMERA. OBJETO: ',{bold:true}), r('EL LOCADOR da en locación a EL LOCATARIO el inmueble ubicado en '+d.inmDir+', de la ciudad de '+d.ciudad+', Provincia de '+d.provincia+', individualizado como '+d.inmTipo+', superficie aproximada: '+d.inmM2+'. Con todos sus servicios funcionando y en buen estado de habitabilidad.')],{before:200}),
       mixed([r('SEGUNDA. DESTINO: ',{bold:true}), r('El inmueble será destinado exclusivamente a '+d.destino+'. Queda prohibido darle un destino distinto sin autorización previa y escrita de EL LOCADOR. EL LOCATARIO no podrá ceder, subarrendar ni transferir el presente contrato bajo apercibimiento de rescisión.')]),
       mixed([r('TERCERA. PLAZO: ',{bold:true}), r('La locación tendrá una duración de '+d.duracion+', comenzando el día '+d.fechaInicio+' y finalizando el día '+d.fechaFin+', sin necesidad de interpelación alguna.')]),
-      mixed([r('CUARTA. PRECIO Y FORMA DE PAGO: ',{bold:true}), r('El canon locativo inicial se fija en la suma de '+d.montoLetras+' ($'+d.montoNum+'), pagadero en Pesos Argentinos, por mes adelantado, del día 1 al día '+d.diaPago+' de cada mes, mediante transferencia bancaria'+(locador.cbu?' al CBU/Alias: '+locador.cbu+' a nombre de '+locador.nombre:' a la cuenta que EL LOCADOR indique')+'.')]),
+      mixed([r('CUARTA. PRECIO Y FORMA DE PAGO: ',{bold:true}), r('El canon locativo inicial se fija en la suma de '+d.montoLetras+' ('+d.monedaSimb+' '+d.montoNum+'), pagadero en '+d.monedaNombre+', por mes adelantado, del día 1 al día '+d.diaPago+' de cada mes, mediante transferencia bancaria'+(locador.cbu?' al CBU/Alias: '+locador.cbu+' a nombre de '+locador.nombre:' a la cuenta que EL LOCADOR indique')+'.')]),
       mixed([r('QUINTA. ACTUALIZACIÓN DEL CANON: ',{bold:true}), r('Las partes acuerdan que el canon locativo se actualizará '+d.actualizacion+'. Si el índice pactado dejara de publicarse, las partes deberán acordar por escrito un reemplazo razonable dentro de los 30 días.')]),
-      mixed([r('SEXTA. DEPÓSITO EN GARANTÍA: ',{bold:true}), r('EL LOCATARIO entrega en este acto la suma de '+d.depLetras+' ($'+d.depNum+') en concepto de depósito en garantía, equivalente a '+d.deposito+' mes/es de alquiler. Su devolución procederá dentro de los 30 días de restituido el inmueble, previa verificación del estado de conservación.')]),
+      mixed([r('SEXTA. DEPÓSITO EN GARANTÍA: ',{bold:true}), r('EL LOCATARIO entrega en este acto la suma de '+d.depLetras+' ('+d.monedaSimb+' '+d.depNum+') en concepto de depósito en garantía, equivalente a '+d.deposito+' mes/es de alquiler. Su devolución procederá dentro de los 30 días de restituido el inmueble, previa verificación del estado de conservación.')]),
       mixed([r('SÉPTIMA. ENTREGA Y ESTADO: ',{bold:true}), r('EL LOCATARIO declara recibir el inmueble en buen estado de conservación y funcionamiento. Toda observación inicial deberá asentarse en el acta de entrega dentro de los 5 días desde la toma de posesión.')]),
       mixed([r('OCTAVA. OBLIGACIONES DEL LOCATARIO: ',{bold:true}), r('a) Abonar puntualmente el alquiler; b) conservar el inmueble con diligencia; c) informar desperfectos relevantes; d) no alterar el destino; e) permitir inspecciones con 48hs de aviso; f) restituir el inmueble al vencimiento en las mismas condiciones, salvo desgaste normal.')]),
       mixed([r('NOVENA. OBLIGACIONES DEL LOCADOR: ',{bold:true}), r('a) Entregar el inmueble en condiciones aptas para el uso convenido; b) garantizar el goce pacífico durante la vigencia; c) asumir las reparaciones estructurales que legalmente le correspondan.')]),
@@ -4525,7 +4675,7 @@ async function generateDocx() {
       if(inmObj) inmObj.estado = 'alquilado';
 
       // Save contract
-      DB.contratos.push({id:newCtId,num:newCtNum,inmId:CONTRACT_DATA.inmId,inqId:inqId,locId:CONTRACT_DATA.locId||null,inicio:con.inicio,fin:con.fin,monto:monto,estado:'vigente'});
+      DB.contratos.push({id:newCtId,num:newCtNum,inmId:CONTRACT_DATA.inmId,inqId:inqId,locId:CONTRACT_DATA.locId||null,inicio:con.inicio,fin:con.fin,monto:monto,moneda:con.moneda||'ARS',estado:'vigente'});
 
       // Auto-generate monthly cobros
       if(CONTRACT_DATA.condiciones.autoCobros === 'si' && con.inicio && con.fin && monto) {
@@ -4536,7 +4686,7 @@ async function generateDocx() {
         while(cur<=dFin){
           var dia=parseInt(con.diaPago)||10;
           var vDate=new Date(cur.getFullYear(),cur.getMonth(),dia);
-          DB.cobros.push({id:cobId++,ctId:newCtId,mes:mArr[cur.getMonth()]+' '+cur.getFullYear(),monto:monto,estado:'pendiente',vence:vDate.toISOString().split('T')[0],fechaEmision:new Date().toLocaleDateString('es-AR')});
+          DB.cobros.push({id:cobId++,ctId:newCtId,mes:mArr[cur.getMonth()]+' '+cur.getFullYear(),monto:monto,moneda:con.moneda||'ARS',estado:'pendiente',vence:vDate.toISOString().split('T')[0],fechaEmision:new Date().toLocaleDateString('es-AR')});
           cur.setMonth(cur.getMonth()+1);
         }
       }
@@ -5307,45 +5457,727 @@ function openAddGasto() {
 
 // ============================================================
 // PAGE: FACTURACIÓN
+// Vista por inquilino: muestra el cobro del mes vigente y, con
+// "Ver más", el resto de meses pendientes + historial.
+// Soporta pagos parciales (cobro.pagos[]) hasta darlo por completado.
 // ============================================================
-function pgFacturacion(el) {
-  var totalCobrado = DB.cobros.filter(function(c){return c.estado==='cobrado';}).reduce(function(s,c){return s+c.monto;},0);
-  var totalPendiente = DB.cobros.filter(function(c){return c.estado==='pendiente';}).reduce(function(s,c){return s+c.monto;},0);
-  var totalVencido = DB.cobros.filter(function(c){return c.estado==='vencido';}).reduce(function(s,c){return s+c.monto;},0);
+var MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+var FACT_UI = window.FACT_UI || { q:'', f:'todos', open:{} };
 
-  var rows = DB.cobros.map(function(c) {
-    var ct=getCt(c.ctId); var inq=ct?getInq(ct.inqId):null; var inm=ct?getInm(ct.inmId):null;
-    var accionBtn = '';
-    if(c.estado==='cobrado') {
-      accionBtn = '<button class="btn btn-ghost" style="font-size:12px" onclick="verRecibo(' + c.id + ')">📄 Ver recibo</button>' +
-        '<button class="btn btn-ghost" style="font-size:12px" onclick="editarCobro(' + c.id + ')">✏ Editar</button>';
-    } else if(c.estado==='pendiente' || c.estado==='vencido') {
-      accionBtn = '<button class="btn btn-green" style="font-size:12px" onclick="registrarPago(' + c.id + ')">✓ Registrar pago</button>' +
-        '<button class="btn btn-ghost" style="font-size:12px" onclick="editarCobro(' + c.id + ')">✏ Editar</button>';
+function hoyISO() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+// "Octubre 2026" / "Octubre  2026" / "10/2026" -> clave numérica (año*12 + mes)
+function periodoKey(mesStr) {
+  var s = String(mesStr||'').replace(/\s+/g,' ').trim();
+  var m1 = s.match(/^(\d{1,2})\s*[\/\-]\s*(\d{4})$/);
+  if(m1) return parseInt(m1[2])*12 + (parseInt(m1[1])-1);
+  var parts = s.split(' ');
+  if(parts.length < 2) return null;
+  var anio = parseInt(parts[parts.length-1]);
+  var nom = parts[0].toLowerCase();
+  var idx = MESES_ES.findIndex(function(m){ return m.toLowerCase() === nom || m.toLowerCase().slice(0,3) === nom.slice(0,3); });
+  if(idx < 0 || isNaN(anio)) return null;
+  return anio*12 + idx;
+}
+function keyToLabel(k) { return MESES_ES[k%12] + ' ' + Math.floor(k/12); }
+function keyHoy() { var d = new Date(); return d.getFullYear()*12 + d.getMonth(); }
+
+// Montos de un cobro, compatibles con cobros viejos sin pagos[]
+function cobroPagado(c) {
+  if(c.pagos && c.pagos.length) return c.pagos.reduce(function(s,p){ return s + (Number(p.monto)||0); }, 0);
+  if(c.estado === 'cobrado') return Number(c.montoPagado || c.monto) || 0;
+  return 0;
+}
+function cobroSaldo(c) {
+  if(c.estado === 'cobrado') return 0;
+  return Math.max(0, (Number(c.monto)||0) - cobroPagado(c));
+}
+// Estado visible: cobrado · parcial · vencido · pendiente (no se guarda 'parcial' en DB)
+function cobroEstadoReal(c) {
+  if(c.estado === 'cobrado') return 'cobrado';
+  if(cobroPagado(c) > 0) return 'parcial';
+  if(c.vence && c.vence < hoyISO()) return 'vencido';
+  return 'pendiente';
+}
+
+// Arma la estructura de filas: una por contrato, agrupadas por inquilino
+function factBuildData() {
+  var kHoy = keyHoy();
+  var hoyMes = new Date(); var inicioMesStr = hoyMes.getFullYear() + '-' + String(hoyMes.getMonth()+1).padStart(2,'0') + '-01';
+  var rows = [];
+
+  DB.contratos.forEach(function(ct) {
+    var cobros = DB.cobros.filter(function(c){ return c.ctId === ct.id; }).map(function(c){
+      return { c:c, k:periodoKey(c.mes) };
+    });
+    var tieneDeuda = cobros.some(function(x){ return x.k !== null && x.k < kHoy && x.c.estado !== 'cobrado'; });
+    var vigente = ct.estado === 'vigente' && !(ct.fin && ct.fin < inicioMesStr);
+    if(!vigente && !tieneDeuda) return;
+
+    // Primer período cobrable: mes vencido -> mes siguiente al inicio del contrato
+    var firstKey = null;
+    if(ct.inicio) { var p = ct.inicio.split('-'); firstKey = parseInt(p[0])*12 + (parseInt(p[1])-1) + 1; }
+    var keysExist = cobros.filter(function(x){ return x.k !== null; }).map(function(x){ return x.k; });
+    if(keysExist.length) firstKey = Math.min(firstKey === null ? Infinity : firstKey, Math.min.apply(null, keysExist));
+
+    var actual = cobros.find(function(x){ return x.k === kHoy; }) || null;
+    var antesDeInicio = !actual && firstKey !== null && kHoy < firstKey;
+
+    var deudas = cobros.filter(function(x){ return x.k !== null && x.k < kHoy && x.c.estado !== 'cobrado'; })
+      .sort(function(a,b){ return a.k - b.k; });
+    var futuros = cobros.filter(function(x){ return (x.k === null || x.k > kHoy) && x.c.estado !== 'cobrado'; })
+      .sort(function(a,b){ return (a.k||0) - (b.k||0); });
+    var historial = cobros.filter(function(x){ return x.c.estado === 'cobrado' && x.k !== kHoy; })
+      .sort(function(a,b){ return (b.k||0) - (a.k||0); });
+
+    var estado;
+    if(actual) estado = cobroEstadoReal(actual.c);
+    else if(antesDeInicio) estado = 'sin iniciar';
+    else estado = vigente ? 'sin recibo' : 'finalizado';
+
+    rows.push({
+      ct:ct, inq:getInq(ct.inqId), inm:getInm(ct.inmId), vigente:vigente,
+      actual:actual, estado:estado, antesDeInicio:antesDeInicio, firstKey:firstKey,
+      deudas:deudas, futuros:futuros, historial:historial,
+      deudaTotal: deudas.reduce(function(s,x){ return s + cobroSaldo(x.c); }, 0)
+    });
+  });
+  return rows;
+}
+
+function pgFacturacion(el) {
+  window.FACT_UI = FACT_UI;
+  var kHoy = keyHoy();
+  var data = factBuildData();
+
+  // KPIs del mes vigente (agrupados por moneda)
+  var aCobrar = {}, cobradoMes = {}, pendienteMes = {}, deuda = {}, nCobrados = 0, nPend = 0, nDeuda = 0;
+  var add = function(map, m, v){ map[m] = (map[m]||0) + (Number(v)||0); };
+  data.forEach(function(r) {
+    if(r.actual) {
+      var c = r.actual.c, m = monedaCobro(c);
+      add(aCobrar, m, c.monto); add(cobradoMes, m, cobroPagado(c)); add(pendienteMes, m, cobroSaldo(c));
+      if(c.estado === 'cobrado') nCobrados++; else nPend++;
+    } else if(r.estado === 'sin recibo') {
+      var m2 = monedaCt(r.ct);
+      add(aCobrar, m2, r.ct.monto); add(pendienteMes, m2, r.ct.monto); nPend++;
     }
-    return '<tr>' +
-      '<td style="font-weight:500">' + h(c.mes) + '</td>' +
-      '<td>' + h(inq?inq.nombre:'—') + '</td>' +
-      '<td style="font-size:12px;color:var(--text3)">' + h(inm?inm.dir.split(',')[0]:'—') + '</td>' +
-      '<td style="font-weight:500">' + fmtPeso(c.monto) + '</td>' +
-      '<td style="font-size:12px">' + h(c.vence||'—') + '</td>' +
-      '<td>' + statusBadge(c.estado) + '</td>' +
-      '<td><div style="display:flex;gap:6px;flex-wrap:wrap">' + accionBtn + '</div></td></tr>';
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">Sin recibos emitidos</td></tr>';
+    if(r.deudaTotal > 0) { add(deuda, r.actual ? monedaCobro(r.actual.c) : monedaCt(r.ct), r.deudaTotal); nDeuda++; }
+  });
+  // Formato compacto por moneda: "$9.560k" + línea extra para USD/EUR
+  var kfmt = function(map){
+    var ks = Object.keys(map).filter(function(k){ return map[k]; });
+    if(!ks.length) return '$0';
+    ks.sort(function(a,b){ return a==='ARS'?-1:b==='ARS'?1:a.localeCompare(b); });
+    return ks.map(function(k, i){
+      var v = map[k]; var s = monedaInfo(k).simb + (k!=='ARS'?' ':'') + (v >= 100000 ? Math.round(v/1000).toLocaleString('es-AR') + 'k' : v.toLocaleString('es-AR'));
+      return i === 0 ? s : '<div style="font-size:14px;margin-top:2px">' + s + '</div>';
+    }).join('');
+  };
 
   el.innerHTML =
     '<div class="page-header">' +
-    '<div><div class="page-title">Facturación y cobros</div><div class="page-subtitle">Gestión de recibos y estado de cuenta</div></div>' +
-    '<button class="btn btn-primary" onclick="openEmitirRecibo()">+ Emitir recibo</button>' +
+    '<div><div class="page-title">Facturación y cobros</div><div class="page-subtitle">Mes vigente: <strong>' + keyToLabel(kHoy) + '</strong> · cobro por inquilino</div></div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-secondary" onclick="abrirResumenWhatsApp(false)">📲 Resumen WhatsApp</button>' +
+    '<button class="btn btn-primary" onclick="openEmitirRecibo()">+ Emitir recibo</button></div>' +
     '</div>' +
     '<div class="page-content fade-in">' +
     '<div class="stats-grid" style="margin-bottom:20px">' +
-    '<div class="stat-card" style="border-left:3px solid var(--green)"><div class="stat-label">Cobrado</div><div class="stat-value" style="color:var(--green)">$' + Math.round(totalCobrado/1000) + 'k</div><div class="stat-sub">' + DB.cobros.filter(function(c){return c.estado==='cobrado';}).length + ' recibos</div></div>' +
-    '<div class="stat-card" style="border-left:3px solid var(--accent)"><div class="stat-label">Pendiente</div><div class="stat-value" style="color:var(--accent-dark)">$' + Math.round(totalPendiente/1000) + 'k</div><div class="stat-sub">' + DB.cobros.filter(function(c){return c.estado==='pendiente';}).length + ' recibos</div></div>' +
-    '<div class="stat-card" style="border-left:3px solid var(--red)"><div class="stat-label">Vencido</div><div class="stat-value" style="color:var(--red)">$' + Math.round(totalVencido/1000) + 'k</div><div class="stat-sub">' + DB.cobros.filter(function(c){return c.estado==='vencido';}).length + ' recibos</div></div>' +
+    '<div class="stat-card" style="border-left:3px solid var(--accent)"><div class="stat-label">A cobrar este mes</div><div class="stat-value">' + kfmt(aCobrar) + '</div><div class="stat-sub">' + (nCobrados+nPend) + ' contratos</div></div>' +
+    '<div class="stat-card" style="border-left:3px solid var(--green)"><div class="stat-label">Cobrado este mes</div><div class="stat-value" style="color:var(--green)">' + kfmt(cobradoMes) + '</div><div class="stat-sub">' + nCobrados + ' completos</div></div>' +
+    '<div class="stat-card" style="border-left:3px solid var(--amber)"><div class="stat-label">Pendiente este mes</div><div class="stat-value" style="color:var(--amber)">' + kfmt(pendienteMes) + '</div><div class="stat-sub">' + nPend + ' por cobrar</div></div>' +
+    '<div class="stat-card" style="border-left:3px solid var(--red)"><div class="stat-label">Deuda meses anteriores</div><div class="stat-value" style="color:var(--red)">' + kfmt(deuda) + '</div><div class="stat-sub">' + nDeuda + ' contrato' + (nDeuda!==1?'s':'') + ' con deuda</div></div>' +
     '</div>' +
-    '<div class="table-wrap"><table><thead><tr><th>Período</th><th>Locatario</th><th>Inmueble</th><th>Monto</th><th>Vencimiento</th><th>Estado</th><th>Acción</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">' +
+    '<input id="fact-q" type="text" placeholder="Buscar inquilino o inmueble…" value="' + h(FACT_UI.q) + '" oninput="FACT_UI.q=this.value;renderFactList()" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font:inherit;font-size:13px">' +
+    '<select id="fact-f" onchange="FACT_UI.f=this.value;renderFactList()" style="padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font:inherit;font-size:13px">' +
+      [['todos','Todos'],['pendiente','Pendientes del mes'],['parcial','Pagos parciales'],['vencido','Vencidos'],['cobrado','Cobrados del mes'],['deuda','Con deuda anterior']]
+        .map(function(o){ return '<option value="'+o[0]+'"'+(FACT_UI.f===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('') +
+    '</select></div>' +
+    '<div id="fact-list"></div>' +
     '</div>';
+  renderFactList();
+}
+
+function renderFactList() {
+  var cont = document.getElementById('fact-list'); if(!cont) return;
+  var data = factBuildData();
+  var q = (FACT_UI.q||'').toLowerCase().trim();
+  var f = FACT_UI.f || 'todos';
+
+  data = data.filter(function(r) {
+    if(q) {
+      var txt = ((r.inq?r.inq.nombre:'') + ' ' + (r.inm?r.inm.dir:'') + ' ' + (r.ct.num||'')).toLowerCase();
+      if(txt.indexOf(q) < 0) return false;
+    }
+    if(f === 'todos') return true;
+    if(f === 'deuda') return r.deudaTotal > 0;
+    if(f === 'pendiente') return r.estado === 'pendiente' || r.estado === 'sin recibo';
+    return r.estado === f;
+  });
+
+  // Agrupar por inquilino
+  var grupos = {}; var orden = [];
+  data.forEach(function(r) {
+    var key = r.inq ? r.inq.id : 'sin-' + r.ct.id;
+    if(!grupos[key]) { grupos[key] = { inq:r.inq, rows:[] }; orden.push(key); }
+    grupos[key].rows.push(r);
+  });
+  var prioridad = { 'vencido':0, 'parcial':1, 'sin recibo':2, 'pendiente':3, 'sin iniciar':4, 'finalizado':5, 'cobrado':6 };
+  var score = function(g){ return Math.min.apply(null, g.rows.map(function(r){ return (r.deudaTotal>0 ? -1 : 0) + (prioridad[r.estado]!==undefined?prioridad[r.estado]:9); })); };
+  orden.sort(function(a,b){
+    var d = score(grupos[a]) - score(grupos[b]); if(d) return d;
+    var na = grupos[a].inq ? grupos[a].inq.nombre : ''; var nb = grupos[b].inq ? grupos[b].inq.nombre : '';
+    return na.localeCompare(nb);
+  });
+
+  if(!orden.length) {
+    cont.innerHTML = '<div class="card" style="text-align:center;color:var(--text3);padding:28px">Sin resultados para este filtro</div>';
+    return;
+  }
+
+  cont.innerHTML = orden.map(function(key) {
+    var g = grupos[key];
+    var nombre = g.inq ? g.inq.nombre : 'Inquilino sin asignar';
+    return '<div class="card" style="margin-bottom:12px;padding:16px 18px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">' +
+        '<div style="font-weight:600;font-size:15px">' + h(nombre) + '</div>' +
+        (g.inq && g.inq.tel ? '<div style="font-size:12px;color:var(--text3)">' + h(g.inq.tel) + '</div>' : '') +
+      '</div>' +
+      g.rows.map(factRowHTML).join('<div style="height:1px;background:var(--border);margin:12px 0"></div>') +
+      '</div>';
+  }).join('');
+}
+
+function factEstadoBadge(estado) {
+  var m = { cobrado:'badge-green', parcial:'badge-blue', vencido:'badge-red', pendiente:'badge-amber', 'sin recibo':'badge-amber', 'sin iniciar':'badge-gray', finalizado:'badge-gray' };
+  return badge(m[estado]||'badge-gray', estado);
+}
+
+function factBarra(c) {
+  var total = Number(c.monto)||0; if(!total) return '';
+  var pag = cobroPagado(c); var pct = Math.min(100, Math.round(pag/total*100));
+  return '<div style="height:6px;background:var(--surface2);border-radius:4px;overflow:hidden;margin-top:6px">' +
+    '<div style="height:100%;width:'+pct+'%;background:'+(pct>=100?'var(--green)':'var(--blue)')+'"></div></div>';
+}
+
+function factAcciones(c, compacto) {
+  var fs = compacto ? 'font-size:11px;padding:4px 8px' : 'font-size:12px';
+  var nComp = comprobantesDeCobro(c).length;
+  var compBadge = nComp ? '<button class="btn btn-ghost" style="'+fs+'" onclick="verComprobantesCobro('+c.id+')" aria-label="Ver comprobantes">🖼 ' + nComp + '</button>' : '';
+  if(c.estado === 'cobrado') {
+    return compBadge + '<button class="btn btn-ghost" style="'+fs+'" onclick="verRecibo('+c.id+')">📄 Recibo</button>' +
+           '<button class="btn btn-ghost" style="'+fs+'" onclick="editarCobro('+c.id+')">✏ Editar</button>';
+  }
+  return '<button class="btn btn-green" style="'+fs+'" onclick="subirComprobante('+c.id+')" title="Subir comprobante y registrar pago">📎 Comprobante</button>' +
+         '<button class="btn btn-secondary" style="'+fs+'" onclick="registrarPago('+c.id+')">' + (cobroPagado(c)>0 ? '+ Pago' : '✓ Pago') + '</button>' +
+         '<button class="btn btn-ghost" style="'+fs+'" onclick="editarCobro('+c.id+')" aria-label="Editar cobro">✏</button>' + compBadge;
+}
+
+function factLineaCobro(c, etiqueta) {
+  var fP = function(n){ return fmtMoneda(n, monedaCobro(c)); };
+  var est = cobroEstadoReal(c);
+  var pag = cobroPagado(c);
+  var detalle = est === 'parcial'
+    ? 'Pagado ' + fP(pag) + ' de ' + fP(c.monto) + ' · <strong>Saldo ' + fP(cobroSaldo(c)) + '</strong>'
+    : fP(c.monto) + (c.vence && est !== 'cobrado' ? ' · vence ' + h(c.vence.split('-').reverse().join('/')) : '') +
+      (est === 'cobrado' && c.fechaPago ? ' · pagado ' + h(String(c.fechaPago).split('-').reverse().join('/')) : '');
+  return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);margin-top:6px">' +
+    '<div style="min-width:180px;flex:1"><div style="font-size:13px;font-weight:500">' + h(etiqueta || c.mes) + ' ' + factEstadoBadge(est) + '</div>' +
+    '<div style="font-size:12px;color:var(--text3);margin-top:2px">' + detalle + '</div>' + (est==='parcial'?factBarra(c):'') + '</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">' + factAcciones(c, true) + '</div></div>';
+}
+
+function factRowHTML(r) {
+  var fP = function(n){ return fmtMoneda(n, (r.actual ? monedaCobro(r.actual.c) : monedaCt(r.ct))); };
+  var ct = r.ct;
+  var kHoy = keyHoy();
+  var dir = r.inm ? r.inm.dir.split(',')[0] : '—';
+  var html = '<div style="font-size:12px;color:var(--text3);margin-bottom:8px">🏠 ' + h(dir) + ' · ' + h(ct.num||'') + (r.vigente ? '' : ' · contrato finalizado') + '</div>';
+
+  // ── Línea principal: cobro del mes vigente ──
+  var principal;
+  if(r.actual) {
+    var c = r.actual.c; var est = cobroEstadoReal(c);
+    var sub = est === 'parcial'
+      ? 'Pagado ' + fP(cobroPagado(c)) + ' de ' + fP(c.monto) + ' · <strong style="color:var(--blue)">Saldo ' + fP(cobroSaldo(c)) + '</strong>'
+      : est === 'cobrado'
+        ? 'Cobrado ' + fP(cobroPagado(c)) + (c.fechaPago ? ' el ' + h(String(c.fechaPago).split('-').reverse().join('/')) : '')
+        : fP(c.monto) + (c.vence ? ' · vence ' + h(c.vence.split('-').reverse().join('/')) : '');
+    principal =
+      '<div style="flex:1;min-width:200px"><div style="font-size:14px;font-weight:600">' + h(keyToLabel(kHoy)) + ' ' + factEstadoBadge(est) + '</div>' +
+      '<div style="font-size:12.5px;color:var(--text2);margin-top:3px">' + sub + '</div>' + (est==='parcial'?factBarra(c):'') + '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">' + factAcciones(c, false) + '</div>';
+  } else if(r.estado === 'sin recibo') {
+    principal =
+      '<div style="flex:1;min-width:200px"><div style="font-size:14px;font-weight:600">' + h(keyToLabel(kHoy)) + ' ' + factEstadoBadge('sin recibo') + '</div>' +
+      '<div style="font-size:12.5px;color:var(--text2);margin-top:3px">' + fP(ct.monto||0) + ' · todavía no hay cobro generado para este mes</div></div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button class="btn btn-green" style="font-size:12px" onclick="factCrearCobro(' + ct.id + ',' + kHoy + ',false);subirComprobante(DB.cobros[DB.cobros.length-1].id)">📎 Comprobante</button>' +
+        '<button class="btn btn-secondary" style="font-size:12px" onclick="factCrearCobro(' + ct.id + ',' + kHoy + ',true)">✓ Pago</button>' +
+        '<button class="btn btn-ghost" style="font-size:12px" onclick="factCrearCobro(' + ct.id + ',' + kHoy + ',false)">+ Generar cobro</button>' +
+      '</div>';
+  } else if(r.estado === 'sin iniciar') {
+    principal =
+      '<div style="flex:1"><div style="font-size:14px;font-weight:600">' + factEstadoBadge('sin iniciar') + '</div>' +
+      '<div style="font-size:12.5px;color:var(--text2);margin-top:3px">Primer cobro (mes vencido): <strong>' + h(keyToLabel(r.firstKey)) + '</strong> · ' + fP(ct.monto||0) + '</div></div>';
+  } else {
+    principal = '<div style="font-size:12.5px;color:var(--text3)">Contrato finalizado — solo quedan saldos anteriores</div>';
+  }
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">' + principal + '</div>';
+
+  // Aviso de deuda y próximo cobro
+  var avisos = [];
+  if(r.deudaTotal > 0) avisos.push('<span style="color:var(--red);font-weight:500">⚠ ' + r.deudas.length + ' mes' + (r.deudas.length!==1?'es':'') + ' anterior' + (r.deudas.length!==1?'es':'') + ' adeudado' + (r.deudas.length!==1?'s':'') + ' · ' + fP(r.deudaTotal) + '</span>');
+  if(r.actual && r.actual.c.estado === 'cobrado' && r.futuros.length) {
+    var prox = r.futuros[0].c;
+    avisos.push('<span style="color:var(--text3)">Próximo: ' + h(prox.mes) + ' · ' + fP(prox.monto) + '</span>');
+  }
+  if(avisos.length) html += '<div style="font-size:12px;margin-top:8px;display:flex;gap:14px;flex-wrap:wrap">' + avisos.join('') + '</div>';
+
+  // ── Ver más ──
+  var nMas = r.deudas.length + r.futuros.length + r.historial.length;
+  if(nMas) {
+    var abierto = !!FACT_UI.open[ct.id];
+    html += '<button class="btn btn-ghost" style="font-size:12px;margin-top:8px;padding:4px 8px" onclick="factToggle(' + ct.id + ')">' +
+      (abierto ? '▲ Ver menos' : '▼ Ver más (' + (r.deudas.length + r.futuros.length) + ' pendiente' + ((r.deudas.length + r.futuros.length)!==1?'s':'') + (r.historial.length ? ' · ' + r.historial.length + ' cobrado' + (r.historial.length!==1?'s':'') : '') + ')') +
+      '</button>';
+    if(abierto) {
+      var sec = function(titulo, items, color) {
+        if(!items.length) return '';
+        return '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:' + color + ';margin:12px 0 2px">' + titulo + '</div>' +
+          items.map(function(x){ return factLineaCobro(x.c); }).join('');
+      };
+      html += '<div>' +
+        sec('Meses anteriores adeudados', r.deudas, 'var(--red)') +
+        sec('Próximos meses', r.futuros, 'var(--amber)') +
+        sec('Historial cobrado', r.historial.slice(0, 6), 'var(--green)') +
+        (r.historial.length > 6 ? '<div style="font-size:11px;color:var(--text3);margin-top:6px">+ ' + (r.historial.length-6) + ' cobros anteriores</div>' : '') +
+        '</div>';
+    }
+  }
+  return html;
+}
+
+// ============================================================
+// RESUMEN MENSUAL DE COBROS POR WHATSAPP (al administrador)
+// Desde el día configurado (por defecto 10), al abrir la app se
+// propone enviar el resumen si todavía no se envió este mes.
+// ============================================================
+var CFG_KEY = 'propmanager_cfg';
+function getCfg() {
+  try { return Object.assign({ adminNombre:'', adminTel:'', resumenDia:10, resumenEnviado:{}, resumenOmitido:{} }, JSON.parse(localStorage.getItem(CFG_KEY) || '{}')); }
+  catch(e) { return { adminNombre:'', adminTel:'', resumenDia:10, resumenEnviado:{}, resumenOmitido:{} }; }
+}
+function setCfg(cfg) { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch(e) {} }
+function mesClave() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+
+// Normaliza el número para wa.me: acepta +54 9 ..., +34 ..., 0294... (AR)
+function normalizarTelWA(tel) {
+  var t = String(tel||'').trim();
+  var mas = t.charAt(0) === '+';
+  var n = t.replace(/\D/g,'');
+  if(!n) return '';
+  if(n.startsWith('00')) return n.slice(2);
+  if(mas) return n;
+  if(n.startsWith('0')) return '549' + n.slice(1);     // número argentino con 0 de área
+  if(n.length <= 10) return '549' + n;                  // número argentino sin código de país
+  return n;
+}
+
+function buildResumenCobros() {
+  var kHoy = keyHoy();
+  var data = factBuildData();
+  var hoy = new Date().toLocaleDateString('es-AR');
+  var cobrados = [], parciales = [], pendientes = [], deudas = [];
+  var totCobrar = {}, totCobrado = {}, totPend = {}, totDeuda = {};
+  var add = function(map, m, v){ map[m] = (map[m]||0) + (Number(v)||0); };
+
+  data.forEach(function(r) {
+    var nom = r.inq ? r.inq.nombre : 'Sin inquilino';
+    var dir = r.inm ? r.inm.dir.split(',')[0] : '—';
+    var lbl = nom + ' (' + dir + ')';
+    var M = r.actual ? monedaCobro(r.actual.c) : monedaCt(r.ct);
+    var fP = function(n){ return fmtMoneda(n, M); };
+    if(r.actual) {
+      var c = r.actual.c, est = cobroEstadoReal(c);
+      add(totCobrar, M, c.monto); add(totCobrado, M, cobroPagado(c)); add(totPend, M, cobroSaldo(c));
+      if(est === 'cobrado') cobrados.push('✅ ' + lbl + ' · ' + fP(cobroPagado(c)) + (c.fechaPago ? ' · ' + String(c.fechaPago).split('-').reverse().join('/') : ''));
+      else if(est === 'parcial') parciales.push('🟡 ' + lbl + ' · pagó ' + fP(cobroPagado(c)) + ' de ' + fP(c.monto) + ' · saldo ' + fP(cobroSaldo(c)));
+      else pendientes.push((est === 'vencido' ? '🔴 ' : '⏳ ') + lbl + ' · ' + fP(c.monto) + (est === 'vencido' ? ' · VENCIDO' : ''));
+    } else if(r.estado === 'sin recibo') {
+      add(totCobrar, M, r.ct.monto); add(totPend, M, r.ct.monto);
+      pendientes.push('⏳ ' + lbl + ' · ' + fP(r.ct.monto||0) + ' · sin cobro registrado');
+    }
+    if(r.deudaTotal > 0) {
+      add(totDeuda, M, r.deudaTotal);
+      deudas.push('⚠️ ' + lbl + ' · ' + r.deudas.map(function(x){ return x.c.mes.replace(/\s+/g,' '); }).join(', ') + ' · ' + fP(r.deudaTotal));
+    }
+  });
+
+  var pctARS = totCobrar.ARS ? Math.round((totCobrado.ARS||0) / totCobrar.ARS * 100) : null;
+  var hayDeuda = Object.keys(totDeuda).some(function(k){ return totDeuda[k]; });
+  var bloque = function(titulo, items) { return items.length ? '\n*' + titulo + ' (' + items.length + ')*\n' + items.join('\n') + '\n' : ''; };
+
+  return '📊 *PropManager — Resumen de cobros*\n' +
+    '*' + keyToLabel(kHoy) + '* · al ' + hoy + '\n\n' +
+    '💰 A cobrar: *' + fmtMultiMoneda(totCobrar) + '*\n' +
+    '✅ Cobrado: *' + fmtMultiMoneda(totCobrado) + '*' + (pctARS !== null && Object.keys(totCobrar).length === 1 ? ' (' + pctARS + '%)' : '') + '\n' +
+    '⏳ Pendiente del mes: *' + fmtMultiMoneda(totPend) + '*\n' +
+    (hayDeuda ? '⚠️ Deuda meses anteriores: *' + fmtMultiMoneda(totDeuda) + '*\n' : '') +
+    bloque('Cobrados', cobrados) +
+    bloque('Pagos parciales', parciales) +
+    bloque('Pendientes', pendientes) +
+    bloque('Deuda de meses anteriores', deudas);
+}
+
+function abrirResumenWhatsApp(automatico) {
+  var cfg = getCfg();
+  var msg = buildResumenCobros();
+  var bodyEl = document.createElement('div');
+  bodyEl.innerHTML =
+    (automatico ? '<div style="background:var(--amber-light);color:var(--amber);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:12.5px">📅 Ya pasó el día ' + cfg.resumenDia + ' — es momento de enviar el resumen de cobros de ' + keyToLabel(keyHoy()) + '.</div>' : '') +
+    '<div class="form-grid">' +
+    '<div class="form-field"><label>Administrador</label><input id="rs-nombre" type="text" placeholder="Nombre" value="' + h(cfg.adminNombre) + '"></div>' +
+    '<div class="form-field"><label>WhatsApp del administrador *</label><input id="rs-tel" type="tel" placeholder="+54 9 2945 123456" value="' + h(cfg.adminTel) + '"></div>' +
+    '<div class="form-field full"><label>Mensaje (editá antes de enviar)</label>' +
+    '<textarea id="rs-msg" style="min-height:260px;font-size:12px;line-height:1.6;font-family:monospace">' + h(msg) + '</textarea></div>' +
+    '<div class="form-field"><label>Recordar a partir del día</label><input id="rs-dia" type="number" min="1" max="28" value="' + cfg.resumenDia + '"></div>' +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--text3);margin-top:8px">💬 Se abre WhatsApp con el mensaje listo; solo tenés que tocar enviar. ' +
+    (cfg.resumenEnviado[mesClave()] ? 'Último envío de este mes: ' + h(cfg.resumenEnviado[mesClave()]) + '.' : 'Todavía no se envió este mes.') + '</div>';
+
+  var guardarCfg = function() {
+    var c = getCfg();
+    c.adminNombre = document.getElementById('rs-nombre').value.trim();
+    c.adminTel = document.getElementById('rs-tel').value.trim();
+    var dia = parseInt(document.getElementById('rs-dia').value);
+    if(dia >= 1 && dia <= 28) c.resumenDia = dia;
+    return c;
+  };
+
+  var btns = [];
+  if(automatico) btns.push({ label:'Omitir este mes', cls:'btn-ghost', action:function(){
+    var c = guardarCfg(); c.resumenOmitido[mesClave()] = true; setCfg(c); closeModal(); toast('No se volverá a recordar este mes','success');
+  }});
+  btns.push({ label:'Copiar texto', cls:'btn-secondary', action:function(){
+    navigator.clipboard.writeText(document.getElementById('rs-msg').value).then(function(){ toast('Copiado ✓','success'); });
+  }});
+  btns.push({ label:'💬 Enviar por WhatsApp', cls:'btn-green', action:function(){
+    var c = guardarCfg();
+    var num = normalizarTelWA(c.adminTel);
+    if(!num) { toast('Ingresá el WhatsApp del administrador','error'); return; }
+    c.resumenEnviado[mesClave()] = new Date().toLocaleString('es-AR');
+    setCfg(c);
+    window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(document.getElementById('rs-msg').value), '_blank');
+    closeModal();
+    toast('Resumen listo en WhatsApp','success');
+  }});
+
+  openModal('Resumen de cobros por WhatsApp', bodyEl, true, modalFooter(btns));
+}
+
+// Al abrir la app: si ya pasó el día configurado y no se envió/omitió este mes, se propone el envío
+function chequearResumenMensual() {
+  try {
+    var cfg = getCfg(); var k = mesClave();
+    if(new Date().getDate() < cfg.resumenDia) return;
+    if(cfg.resumenEnviado[k] || cfg.resumenOmitido[k]) return;
+    if(!DB.contratos || !DB.contratos.length) return;
+    setTimeout(function(){ abrirResumenWhatsApp(true); }, 1200);
+  } catch(e) { console.error('Resumen mensual:', e); }
+}
+
+// ============================================================
+// SUBIR COMPROBANTE — flujo rápido (FAB, barra inferior, Facturación)
+// Foto o archivo → inquilino → cobro → monto. Registra el pago
+// (admite pagos parciales) y guarda el comprobante en la ficha.
+// ============================================================
+var COMP_UP = { files: [] };
+
+// Comprime imágenes para no llenar el almacenamiento del navegador
+function comprimirArchivo(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onerror = function(){ reject(new Error('No se pudo leer ' + file.name)); };
+    reader.onload = function(e) {
+      var data = e.target.result;
+      var base = { name:file.name, type:file.type, size:file.size, data:data, fecha:new Date().toLocaleDateString('es-AR') };
+      if(!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) { resolve(base); return; }
+      var img = new Image();
+      img.onload = function() {
+        var max = 1600, w = img.naturalWidth, h = img.naturalHeight;
+        var k = Math.min(1, max / Math.max(w, h));
+        var cv = document.createElement('canvas'); cv.width = Math.round(w*k); cv.height = Math.round(h*k);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        var out = cv.toDataURL('image/jpeg', 0.72);
+        if(out.length < data.length) {
+          base.data = out; base.type = 'image/jpeg';
+          base.name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+          base.size = Math.round(out.length * 0.75);
+        }
+        resolve(base);
+      };
+      img.onerror = function(){ resolve(base); };
+      img.src = data;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function compAgregarArchivos(fileList) {
+  var files = Array.from(fileList || []);
+  if(!files.length) return;
+  Promise.all(files.map(comprimirArchivo)).then(function(list) {
+    list.forEach(function(f) {
+      if(f.size > 2.5*1024*1024) toast(f.name + ' es pesado (' + (f.size/1048576).toFixed(1) + ' MB): puede llenar el almacenamiento', 'error');
+      COMP_UP.files.push(f);
+    });
+    compRenderThumbs();
+  }).catch(function(err){ toast(err.message, 'error'); });
+}
+
+function compRenderThumbs() {
+  var el = document.getElementById('cu-thumbs'); if(!el) return;
+  el.innerHTML = COMP_UP.files.map(function(f, i) {
+    var prev = /^image\//.test(f.type) ? '<img src="' + f.data + '" alt="">' : '<div>📄<br>' + h(f.name.slice(0, 18)) + '</div>';
+    return '<div class="comp-thumb">' + prev + '<button type="button" aria-label="Quitar archivo" onclick="COMP_UP.files.splice(' + i + ',1);compRenderThumbs()">✕</button></div>';
+  }).join('');
+  var hint = document.getElementById('cu-drop-hint');
+  if(hint) hint.textContent = COMP_UP.files.length ? COMP_UP.files.length + ' archivo' + (COMP_UP.files.length>1?'s':'') + ' listo' + (COMP_UP.files.length>1?'s':'') : 'Sacá una foto del comprobante o elegí un archivo (imagen o PDF)';
+}
+
+// Opciones de cobro para un inquilino: pendientes (anteriores y del mes) + mes actual sin generar
+function compOpcionesCobro(inqId) {
+  var kHoy = keyHoy();
+  var cts = DB.contratos.filter(function(ct){ return ct.inqId === inqId; });
+  var ops = [];
+  cts.forEach(function(ct) {
+    var inm = getInm(ct.inmId); var dir = inm ? inm.dir.split(',')[0] : (ct.num||'');
+    var multi = cts.length > 1 ? ' · ' + dir : '';
+    var cobros = DB.cobros.filter(function(c){ return c.ctId === ct.id && c.estado !== 'cobrado'; })
+      .map(function(c){ return { c:c, k:periodoKey(c.mes) }; })
+      .filter(function(x){ return x.k === null || x.k <= kHoy + 1; })
+      .sort(function(a,b){ return (a.k||0) - (b.k||0); });
+    cobros.forEach(function(x) {
+      var c = x.c, est = cobroEstadoReal(c);
+      ops.push({ value:'cobro:' + c.id, k:x.k||0, label: c.mes.replace(/\s+/g,' ') + multi + ' — saldo ' + fmtMoneda(cobroSaldo(c), monedaCobro(c)) + (est==='parcial'?' (parcial)':est==='vencido'?' (vencido)':'') });
+    });
+    var hayActual = DB.cobros.some(function(c){ return c.ctId === ct.id && periodoKey(c.mes) === kHoy; });
+    if(!hayActual && ct.estado === 'vigente') {
+      ops.push({ value:'nuevo:' + ct.id + ':' + kHoy, k:kHoy, label: keyToLabel(kHoy) + multi + ' — ' + fmtMoneda(ct.monto||0, monedaCt(ct)) + ' (generar cobro)' });
+    }
+  });
+  ops.sort(function(a,b){ return a.k - b.k; });
+  ops.push({ value:'solo', k:9e9, label:'Solo guardar el comprobante (sin registrar pago)' });
+  return ops;
+}
+
+function compResolverCobro(val) {
+  if(!val || val === 'solo') return null;
+  if(val.indexOf('cobro:') === 0) return DB.cobros.find(function(c){ return c.id === parseInt(val.slice(6)); }) || null;
+  if(val.indexOf('nuevo:') === 0) {
+    var p = val.split(':'); var ct = getCt(parseInt(p[1])); var key = parseInt(p[2]); if(!ct) return null;
+    var existe = DB.cobros.find(function(c){ return c.ctId === ct.id && periodoKey(c.mes) === key; });
+    if(existe) return existe;
+    var anio = Math.floor(key/12), mes = key%12 + 1;
+    var nuevo = { id: DB.cobros.length ? Math.max.apply(null, DB.cobros.map(function(c){ return c.id; })) + 1 : 1,
+      ctId:ct.id, mes:keyToLabel(key), monto:Number(ct.monto)||0, moneda:monedaCt(ct), estado:'pendiente',
+      vence: anio + '-' + String(mes).padStart(2,'0') + '-10', fechaEmision:new Date().toLocaleDateString('es-AR'), pagos:[] };
+    DB.cobros.push(nuevo);
+    return nuevo;
+  }
+  return null;
+}
+
+function compActualizarCobro() {
+  var inqSel = document.getElementById('cu-inq'), cobSel = document.getElementById('cu-cobro');
+  if(!inqSel || !cobSel) return;
+  var inqId = parseFloat(inqSel.value);
+  var ops = inqId ? compOpcionesCobro(inqId) : [];
+  var pre = COMP_UP.preCobro ? 'cobro:' + COMP_UP.preCobro : null;
+  cobSel.innerHTML = ops.length ? ops.map(function(o){ return '<option value="' + o.value + '"' + (o.value===pre?' selected':'') + '>' + h(o.label) + '</option>'; }).join('') : '<option value="">Elegí primero el inquilino</option>';
+  COMP_UP.preCobro = null;
+  compActualizarMonto();
+}
+
+function compActualizarMonto() {
+  var cobSel = document.getElementById('cu-cobro'), mEl = document.getElementById('cu-monto'), sim = document.getElementById('cu-sim'), info = document.getElementById('cu-info');
+  if(!cobSel || !mEl) return;
+  var v = cobSel.value, saldo = 0, mon = 'ARS', txt = '';
+  if(v && v.indexOf('cobro:') === 0) {
+    var c = DB.cobros.find(function(x){ return x.id === parseInt(v.slice(6)); });
+    if(c) { saldo = cobroSaldo(c); mon = monedaCobro(c); txt = 'Total ' + fmtMoneda(c.monto, mon) + (cobroPagado(c) ? ' · ya pagado ' + fmtMoneda(cobroPagado(c), mon) : ''); }
+  } else if(v && v.indexOf('nuevo:') === 0) {
+    var ct = getCt(parseInt(v.split(':')[1])); if(ct) { saldo = Number(ct.monto)||0; mon = monedaCt(ct); txt = 'Se generará el cobro del mes'; }
+  }
+  var solo = v === 'solo';
+  document.getElementById('cu-pago-fields').style.display = solo ? 'none' : '';
+  mEl.value = saldo || '';
+  if(sim) sim.textContent = monedaInfo(mon).simb;
+  if(info) info.innerHTML = solo ? '' : '<span class="saldo-chip">Saldo ' + fmtMoneda(saldo, mon) + '</span> <span style="font-size:12px;color:var(--text3)">' + h(txt) + '</span>';
+}
+
+function subirComprobante(cobroId) {
+  COMP_UP = { files: [], preCobro: cobroId || null };
+  var preInq = null;
+  if(cobroId) { var c0 = DB.cobros.find(function(c){ return c.id === cobroId; }); var ct0 = c0 ? getCt(c0.ctId) : null; preInq = ct0 ? ct0.inqId : null; }
+
+  // Inquilinos con contrato: primero los que tienen saldo pendiente
+  var kHoy = keyHoy();
+  var inqs = DB.inquilinos.filter(function(i){ return DB.contratos.some(function(ct){ return ct.inqId === i.id; }); }).map(function(i) {
+    var pend = DB.cobros.some(function(c){ var ct = getCt(c.ctId); var k = periodoKey(c.mes); return ct && ct.inqId === i.id && c.estado !== 'cobrado' && k !== null && k <= kHoy; });
+    return { i:i, pend:pend };
+  }).sort(function(a,b){ return (b.pend - a.pend) || a.i.nombre.localeCompare(b.i.nombre); });
+
+  var esMovil = window.innerWidth <= 640;
+  var CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+  var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+
+  var bodyEl = document.createElement('div');
+  bodyEl.innerHTML =
+    '<div class="drop-zone" id="cu-drop">' +
+      '<div class="drop-actions">' +
+        '<label class="primary">' + CAM + 'Sacar foto<input type="file" accept="image/*" capture="environment" style="display:none" onchange="compAgregarArchivos(this.files);this.value=\'\'"></label>' +
+        '<label>' + FILE + 'Elegir archivo<input type="file" accept="image/*,.pdf" multiple style="display:none" onchange="compAgregarArchivos(this.files);this.value=\'\'"></label>' +
+      '</div>' +
+      '<div id="cu-drop-hint" style="font-size:12.5px;color:var(--text3)">' + (esMovil ? 'Sacá una foto del comprobante o elegí un archivo (imagen o PDF)' : 'Arrastrá aquí el comprobante, o usá los botones') + '</div>' +
+      '<div class="comp-thumbs" id="cu-thumbs"></div>' +
+    '</div>' +
+    '<div class="form-grid" style="margin-top:16px">' +
+      '<div class="form-field full"><label for="cu-inq">Inquilino *</label><select id="cu-inq" onchange="compActualizarCobro()">' +
+        '<option value="">Elegí un inquilino…</option>' +
+        inqs.map(function(x){ return '<option value="' + x.i.id + '"' + (x.i.id===preInq?' selected':'') + '>' + h(x.i.nombre) + (x.pend ? ' · con saldo pendiente' : '') + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="form-field full"><label for="cu-cobro">¿Qué está pagando? *</label><select id="cu-cobro" onchange="compActualizarMonto()"><option value="">Elegí primero el inquilino</option></select>' +
+        '<div id="cu-info" style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"></div></div>' +
+    '</div>' +
+    '<div id="cu-pago-fields"><div class="form-grid" style="margin-top:14px">' +
+      '<div class="form-field"><label for="cu-monto">Monto pagado (<span id="cu-sim">$</span>) *</label><input id="cu-monto" type="number" inputmode="decimal" min="0"></div>' +
+      '<div class="form-field"><label for="cu-fecha">Fecha de pago</label><input id="cu-fecha" type="date" value="' + hoyISO() + '"></div>' +
+      '<div class="form-field"><label for="cu-medio">Medio de pago</label><select id="cu-medio"><option>Transferencia bancaria</option><option>Mercado Pago</option><option>Efectivo</option><option>Cheque</option><option>Otro</option></select></div>' +
+      '<div class="form-field"><label for="cu-ref">Referencia (opcional)</label><input id="cu-ref" type="text" placeholder="N° de operación"></div>' +
+      '<div class="form-field full" style="gap:8px">' +
+        '<label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13.5px;font-weight:500;color:var(--text2);cursor:pointer"><input id="cu-completo" type="checkbox" style="width:20px;height:20px"> Dar el cobro por completado aunque quede saldo</label>' +
+        '<label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13.5px;font-weight:500;color:var(--text2);cursor:pointer"><input id="cu-recibo" type="checkbox" style="width:20px;height:20px"' + (esMovil ? '' : ' checked') + '> Descargar el recibo en Word si el cobro queda completo</label>' +
+      '</div>' +
+    '</div></div>';
+
+  var footer = modalFooter([{ label:'Guardar comprobante', cls:'btn-green', action:guardarComprobanteRapido }]);
+  openModal('Subir comprobante de pago', bodyEl, false, footer);
+
+  setTimeout(function() {
+    var dz = document.getElementById('cu-drop');
+    if(dz) {
+      ['dragenter','dragover'].forEach(function(ev){ dz.addEventListener(ev, function(e){ e.preventDefault(); dz.classList.add('drag'); }); });
+      ['dragleave','drop'].forEach(function(ev){ dz.addEventListener(ev, function(e){ e.preventDefault(); dz.classList.remove('drag'); }); });
+      dz.addEventListener('drop', function(e){ compAgregarArchivos(e.dataTransfer.files); });
+    }
+    if(preInq) compActualizarCobro();
+  }, 30);
+}
+
+function guardarComprobanteRapido() {
+  var inqId = parseFloat(document.getElementById('cu-inq').value);
+  var inq = getInq(inqId);
+  var cobVal = document.getElementById('cu-cobro').value;
+  if(!inq) { toast('Elegí el inquilino','error'); return; }
+  if(!cobVal) { toast('Elegí qué está pagando','error'); return; }
+  var solo = cobVal === 'solo';
+  if(solo && !COMP_UP.files.length) { toast('Agregá al menos un comprobante','error'); return; }
+
+  var monto = parseFloat(document.getElementById('cu-monto').value) || 0;
+  var forzar = document.getElementById('cu-completo').checked;
+  if(!solo && monto <= 0 && !forzar) { toast('Ingresá el monto pagado','error'); return; }
+  var fecha = document.getElementById('cu-fecha').value || hoyISO();
+  var medio = document.getElementById('cu-medio').value;
+  var ref = document.getElementById('cu-ref').value.trim();
+
+  COMP_UP.wantRecibo = !!(document.getElementById('cu-recibo') && document.getElementById('cu-recibo').checked);
+  var cobro = solo ? null : compResolverCobro(cobVal);
+  var completo = false, mon = cobro ? monedaCobro(cobro) : 'ARS';
+  if(cobro) {
+    if(!cobro.pagos) cobro.pagos = [];
+    if(monto > 0) cobro.pagos.push({ id:Date.now(), fecha:fecha, monto:monto, medio:medio, ref:ref, comprobantes:COMP_UP.files.length });
+    var total = cobroPagado(cobro);
+    completo = forzar || total >= (Number(cobro.monto)||0);
+    if(completo) {
+      cobro.estado = 'cobrado'; cobro.fechaPago = fecha; cobro.medioPago = medio; cobro.referencia = ref || cobro.referencia || '';
+      if(total !== Number(cobro.monto)) cobro.montoPagado = total; else delete cobro.montoPagado;
+    } else {
+      cobro.estado = (cobro.vence && cobro.vence < hoyISO()) ? 'vencido' : 'pendiente';
+    }
+  }
+
+  if(!inq.comprobantes) inq.comprobantes = [];
+  var periodo = cobro ? cobro.mes : keyToLabel(keyHoy());
+  COMP_UP.files.forEach(function(f) {
+    f.periodo = periodo;
+    f.cobroId = cobro ? cobro.id : null;
+    f.nota = [medio, monto ? fmtMoneda(monto, mon) : '', cobro && !completo ? 'pago parcial' : '', ref ? 'Ref: ' + ref : ''].filter(Boolean).join(' · ');
+    inq.comprobantes.push(f);
+  });
+
+  saveDB();
+  closeModal();
+  var quiereRecibo = cobro && completo && COMP_UP.wantRecibo;
+  toast(!cobro ? 'Comprobante guardado en la ficha de ' + inq.nombre
+        : completo ? 'Pago registrado · ' + cobro.mes + ' cobrado ✓'
+        : 'Pago parcial registrado · saldo ' + fmtMoneda(cobroSaldo(cobro), mon), 'success');
+  if(quiereRecibo) { var ct = getCt(cobro.ctId); generarReciboDocx(cobro, ct, inq, ct ? getInm(ct.inmId) : null); }
+  if(typeof updateAlertaBadge === 'function') updateAlertaBadge();
+  if(document.getElementById('fact-list')) renderFactList(); else renderPage();
+}
+
+// Comprobantes vinculados a un cobro (por id o por período del mismo inquilino)
+function comprobantesDeCobro(c) {
+  var ct = getCt(c.ctId); var inq = ct ? getInq(ct.inqId) : null; if(!inq) return [];
+  var k = periodoKey(c.mes);
+  return (inq.comprobantes || []).map(function(cp, idx){ return { cp:cp, idx:idx, inq:inq }; }).filter(function(x) {
+    if(x.cp.cobroId === c.id || x.cp.reciboId === c.id) return true;
+    return !x.cp.cobroId && x.cp.periodo && periodoKey(x.cp.periodo) === k;
+  });
+}
+
+function verComprobantesCobro(cobroId) {
+  var c = DB.cobros.find(function(x){ return x.id === cobroId; }); if(!c) return;
+  var list = comprobantesDeCobro(c);
+  var bodyEl = document.createElement('div');
+  bodyEl.innerHTML = (list.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">' + list.map(function(x) {
+      var cp = x.cp;
+      var prev = /^image\//.test(cp.type||'') ? '<img src="' + cp.data + '" alt="Comprobante" style="width:100%;height:140px;object-fit:cover;border-radius:10px;border:1px solid var(--border)">'
+        : '<div style="height:140px;border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:32px;background:var(--surface2)">📄</div>';
+      return '<div style="display:flex;flex-direction:column;gap:6px">' + prev +
+        '<div style="font-size:11.5px;color:var(--text3);line-height:1.4">' + h(cp.fecha||'') + (cp.nota ? '<br>' + h(cp.nota) : '') + '</div>' +
+        '<button class="btn btn-secondary" style="font-size:12px;justify-content:center" onclick="downloadComp(getInq(' + x.inq.id + ').comprobantes[' + x.idx + '])">⬇ Descargar</button></div>';
+    }).join('') + '</div>'
+    : '<div style="text-align:center;color:var(--text3);padding:20px">Todavía no hay comprobantes para ' + h(c.mes) + '</div>');
+  openModal('Comprobantes — ' + c.mes.replace(/\s+/g,' '), bodyEl, false, modalFooter([{ label:'+ Subir comprobante', cls:'btn-primary', action:function(){ subirComprobante(cobroId); } }]));
+}
+
+// Esc cierra el modal abierto
+document.addEventListener('keydown', function(e) {
+  if(e.key === 'Escape' && document.getElementById('modal-ov')) closeModal();
+});
+
+function factToggle(ctId) { FACT_UI.open[ctId] = !FACT_UI.open[ctId]; renderFactList(); }
+
+// Crea el cobro del período (cuando el contrato no lo tiene generado) y opcionalmente abre el registro de pago
+function factCrearCobro(ctId, key, abrirPago) {
+  var ct = getCt(ctId); if(!ct) return;
+  var label = keyToLabel(key);
+  var existe = DB.cobros.find(function(c){ return c.ctId === ctId && periodoKey(c.mes) === key; });
+  if(existe) { if(abrirPago) registrarPago(existe.id); return; }
+  var anio = Math.floor(key/12), mes = key%12 + 1;
+  var newId = DB.cobros.length ? Math.max.apply(null, DB.cobros.map(function(c){ return c.id; })) + 1 : 1;
+  var nuevo = { id:newId, ctId:ctId, mes:label, monto:Number(ct.monto)||0, moneda:monedaCt(ct), estado:'pendiente',
+    vence: anio + '-' + String(mes).padStart(2,'0') + '-10', fechaEmision:new Date().toLocaleDateString('es-AR'), pagos:[] };
+  DB.cobros.push(nuevo);
+  saveDB();
+  if(abrirPago) { registrarPago(newId); }
+  else { renderFactList(); toast('Cobro de ' + label + ' generado','success'); }
 }
 
 function openEmitirRecibo() {
@@ -5395,7 +6227,7 @@ function openEmitirRecibo() {
 
       // Add to DB
       var newId = DB.cobros.length ? Math.max.apply(null, DB.cobros.map(function(c){return c.id;})) + 1 : 1;
-      var newCobro = { id:newId, ctId:ctId, mes:mes, monto:monto, estado:'pendiente', vence:vence, obs:obs,
+      var newCobro = { id:newId, ctId:ctId, mes:mes, monto:monto, moneda:monedaCt(ct), estado:'pendiente', vence:vence, obs:obs,
         fechaEmision: new Date().toLocaleDateString('es-AR') };
       DB.cobros.push(newCobro);
       saveDB();
@@ -5422,52 +6254,82 @@ function prefillReciboMonto() {
 }
 
 function registrarPago(cobroId) {
+  var fP = function(n){ return fmtMoneda(n, monedaCobro(cobro)); };
   var cobro = DB.cobros.find(function(c){return c.id===cobroId;}); if(!cobro) return;
   var ct = getCt(cobro.ctId); var inq = ct?getInq(ct.inqId):null; var inm = ct?getInm(ct.inmId):null;
+  if(!cobro.pagos) cobro.pagos = [];
+  var pagado = cobroPagado(cobro);
+  var saldo  = cobroSaldo(cobro);
+
+  var listaPagos = cobro.pagos.length
+    ? '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin:4px 0 6px">Pagos registrados</div>' +
+      cobro.pagos.map(function(p){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:12.5px">' +
+          '<div><strong>' + fP(p.monto) + '</strong> · ' + h(String(p.fecha||'').split('-').reverse().join('/')) + (p.medio?' · '+h(p.medio):'') + (p.ref?' · '+h(p.ref):'') + '</div>' +
+          '<button class="btn btn-ghost" style="font-size:11px;padding:3px 7px;color:var(--red)" onclick="eliminarPagoParcial(' + cobro.id + ',' + p.id + ')">🗑</button></div>';
+      }).join('') + '<div style="height:10px"></div>'
+    : '';
 
   var bodyEl = document.createElement('div');
   bodyEl.innerHTML =
-    '<div style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:16px">' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-    [['Locatario', inq?inq.nombre:'—'], ['Inmueble', inm?inm.dir.split(',')[0]:'—'],
-     ['Período', cobro.mes], ['Monto', fmtPeso(cobro.monto)]].map(function(p){
+    '<div style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:14px">' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">' +
+    [['Locatario', inq?inq.nombre:'—'], ['Inmueble', inm?inm.dir.split(',')[0]:'—'], ['Período', cobro.mes],
+     ['Monto total', fP(cobro.monto)], ['Ya pagado', fP(pagado)], ['Saldo', fP(saldo)]].map(function(p){
       return '<div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">' + p[0] + '</div>' +
-             '<div style="font-size:13px;font-weight:500">' + h(String(p[1])) + '</div></div>';
-    }).join('') + '</div></div>' +
+             '<div style="font-size:13px;font-weight:' + (p[0]==='Saldo'?'700':'500') + '">' + h(String(p[1])) + '</div></div>';
+    }).join('') + '</div>' + (pagado > 0 ? factBarra(cobro) : '') + '</div>' +
+    listaPagos +
     '<div class="form-grid">' +
-    '<div class="form-field"><label>Fecha de pago *</label><input id="rp-fecha" type="date" value="' + new Date().toISOString().split('T')[0] + '"></div>' +
+    '<div class="form-field"><label>Fecha de pago *</label><input id="rp-fecha" type="date" value="' + hoyISO() + '"></div>' +
+    '<div class="form-field"><label>Monto de este pago ($) *</label><input id="rp-monto" type="number" min="0" value="' + saldo + '"></div>' +
     '<div class="form-field"><label>Medio de pago</label><select id="rp-medio"><option>Transferencia bancaria</option><option>Efectivo</option><option>Cheque</option><option>Otro</option></select></div>' +
-    '<div class="form-field full"><label>Referencia / Comprobante</label><input id="rp-ref" type="text" placeholder="N° transferencia, recibo, etc."></div>' +
+    '<div class="form-field"><label>Referencia / Comprobante</label><input id="rp-ref" type="text" placeholder="N° transferencia, recibo, etc."></div>' +
     '<div class="form-field full"><label>Adjuntar comprobante (opcional)</label>' +
     '<input id="rp-file" type="file" accept="image/*,.pdf" style="font-size:12px"></div>' +
+    '<div class="form-field full"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer">' +
+    '<input id="rp-completo" type="checkbox" style="width:auto"> Dar el cobro por completado (aunque quede saldo)</label>' +
+    '<div id="rp-hint" style="font-size:12px;color:var(--text3);margin-top:4px"></div></div>' +
     '</div>';
 
   var footer = modalFooter([{
-    label: 'Confirmar pago y generar recibo',
+    label: 'Guardar pago',
     cls: 'btn-green',
     action: function() {
       var fecha = document.getElementById('rp-fecha').value;
+      var monto = parseFloat(document.getElementById('rp-monto').value) || 0;
       var medio = document.getElementById('rp-medio').value;
       var ref   = document.getElementById('rp-ref').value.trim();
-      var fileEl= document.getElementById('rp-file');
+      var forzar = document.getElementById('rp-completo').checked;
+      var fileEl = document.getElementById('rp-file');
       if(!fecha) { toast('Ingresá la fecha de pago','error'); return; }
+      if(monto <= 0 && !forzar) { toast('Ingresá el monto pagado','error'); return; }
 
-      cobro.estado = 'cobrado';
-      cobro.fechaPago = fecha;
-      cobro.medioPago = medio;
-      cobro.referencia = ref;
+      // Si el cobro venía marcado como cobrado sin detalle de pagos, se respeta lo ya pagado
+      if(monto > 0) cobro.pagos.push({ id:Date.now(), fecha:fecha, monto:monto, medio:medio, ref:ref });
+      var total = cobroPagado(cobro);
+      var completo = forzar || total >= (Number(cobro.monto)||0);
 
-      // If file attached, save to inquilino's comprobantes
+      if(completo) {
+        cobro.estado = 'cobrado';
+        cobro.fechaPago = fecha;
+        cobro.medioPago = medio;
+        cobro.referencia = ref || cobro.referencia || '';
+        if(total !== Number(cobro.monto)) cobro.montoPagado = total; else delete cobro.montoPagado;
+      } else {
+        cobro.estado = (cobro.vence && cobro.vence < hoyISO()) ? 'vencido' : 'pendiente';
+      }
+
       var file = fileEl && fileEl.files[0];
       if(file && inq) {
         var reader = new FileReader();
         reader.onload = function(e) {
           if(!inq.comprobantes) inq.comprobantes = [];
           inq.comprobantes.push({
-            name: 'Pago_' + cobro.mes.replace(/ /g,'_') + '_' + file.name,
+            name: 'Pago_' + cobro.mes.replace(/\s+/g,'_') + '_' + file.name,
             type: file.type, size: file.size, data: e.target.result,
             fecha: new Date().toLocaleDateString('es-AR'),
-            periodo: cobro.mes, nota: medio + (ref?' · Ref: '+ref:'')
+            periodo: cobro.mes, nota: medio + ' · ' + fP(monto) + (completo ? '' : ' (pago parcial)') + (ref?' · Ref: '+ref:'')
           });
           saveDB();
         };
@@ -5475,15 +6337,41 @@ function registrarPago(cobroId) {
       }
 
       saveDB();
-      // Generate recibo
-      generarReciboDocx(cobro, ct, inq, inm);
       closeModal();
-      nav('facturacion');
-      toast('Pago registrado y recibo generado','success');
+      if(completo) {
+        generarReciboDocx(cobro, ct, inq, inm);
+        toast('Cobro completado y recibo generado','success');
+      } else {
+        toast('Pago parcial registrado · saldo ' + fP(cobroSaldo(cobro)),'success');
+      }
+      if(document.getElementById('fact-list')) renderFactList(); else nav('facturacion');
     }
   }]);
 
   openModal('Registrar pago — ' + cobro.mes, bodyEl, false, footer);
+  setTimeout(function(){
+    var mEl = document.getElementById('rp-monto'), hint = document.getElementById('rp-hint');
+    if(!mEl || !hint) return;
+    var upd = function(){
+      var v = parseFloat(mEl.value)||0; var rest = saldo - v;
+      hint.textContent = rest > 0 ? 'Quedará un saldo de ' + fP(rest) + ' — el cobro seguirá abierto como pago parcial.' : 'Con este pago el cobro queda completo y se genera el recibo.';
+    };
+    mEl.addEventListener('input', upd); upd();
+  }, 50);
+}
+
+function eliminarPagoParcial(cobroId, pagoId) {
+  var cobro = DB.cobros.find(function(c){return c.id===cobroId;}); if(!cobro || !cobro.pagos) return;
+  if(!confirm('¿Eliminar este pago?')) return;
+  cobro.pagos = cobro.pagos.filter(function(p){ return p.id !== pagoId; });
+  var total = cobro.pagos.reduce(function(s,p){ return s + (Number(p.monto)||0); }, 0);
+  if(cobro.estado === 'cobrado' && total < (Number(cobro.monto)||0)) {
+    cobro.estado = (cobro.vence && cobro.vence < hoyISO()) ? 'vencido' : 'pendiente';
+    cobro.fechaPago = null; delete cobro.montoPagado;
+  }
+  saveDB(); closeModal();
+  if(document.getElementById('fact-list')) renderFactList();
+  registrarPago(cobroId);
 }
 
 function editarCobro(cobroId) {
@@ -5541,6 +6429,8 @@ function editarCobro(cobroId) {
       cobro.fechaPago = null;
       cobro.medioPago = null;
       cobro.referencia = '';
+      cobro.pagos = [];
+      delete cobro.montoPagado;
       saveDB(); closeModal(); nav('facturacion'); toast('Cobro revertido a pendiente','success');
     }});
   }
@@ -5588,7 +6478,8 @@ async function generarReciboDocx(cobro, ct, inq, inm) {
     }
 
     var reciboNum = 'R-' + new Date().getFullYear() + '-' + String(cobro.id).padStart(4,'0');
-    var montoLetras = n2w(cobro.monto||0).toUpperCase() + ' PESOS';
+    var monRec = monedaCobro(cobro);
+    var montoLetras = n2w(cobro.monto||0).toUpperCase() + ' ' + monedaInfo(monRec).letras;
 
     var children = [
       // Header
@@ -5613,7 +6504,7 @@ async function generarReciboDocx(cobro, ct, inq, inm) {
       bold('IMPORTE', {before:120, size:20}),
       new D.Paragraph({
         alignment: c, spacing:{before:80,after:80},
-        children:[new D.TextRun({text: fmtPeso(cobro.monto||0), bold:true, size:52, font:'Arial', color:'1A6B3A'})]
+        children:[new D.TextRun({text: fmtMoneda(cobro.monto||0, monRec), bold:true, size:52, font:'Arial', color:'1A6B3A'})]
       }),
       p(montoLetras, {align:c, size:20}),
       line(),
@@ -5775,7 +6666,7 @@ function pgInformes(el) {
       '<td><div style="font-weight:500;font-size:13px">'+h(p.dir.split(',')[0])+'</div>' +
       '<div style="font-size:11px;color:var(--text3)">'+h(p.tipo)+'</div></td>' +
       '<td><span class="badge '+(statusMap[p.estado]||'badge-gray')+'">'+h(p.estado)+'</span></td>' +
-      '<td>'+fmtPeso(p.precio)+'/mes</td>' +
+      '<td>'+fmtMoneda(p.precio, p.moneda)+'/mes</td>' +
       '<td style="color:var(--green);font-weight:500">'+fmtPeso(cobradoInm)+'</td>' +
       '<td style="color:var(--red);font-weight:500">'+fmtPeso(gastadoInm)+'</td>' +
       '<td style="font-weight:600;color:'+(netInm>=0?'var(--green)':'var(--red)')+'">'+fmtPeso(netInm)+'</td>' +
@@ -6547,6 +7438,7 @@ var loaded = loadDB();
 migrarLocadorPorInmueble();
 migrarLocadorSRL();
 nav('dashboard');
+chequearResumenMensual();
 if(loaded) {
   // Show subtle indicator that data was restored
   setTimeout(function(){

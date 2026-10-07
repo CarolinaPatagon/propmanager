@@ -721,6 +721,9 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
   .inq-filters select { flex:1 1 45%; }
 }
 
+.cloud-mini span:last-child { max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+@media (max-width: 380px) { .cloud-mini span:last-child { display:none; } }
+
 /* ══ BRAND — logo A (techo + P, degradé) ══════════════════════ */
 .brand-icon {
   width:38px; height:38px; border-radius:11px; flex-shrink:0;
@@ -838,6 +841,7 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
 <!-- Mobile topbar -->
 <div class="topbar" id="topbar">
   <div class="topbar-logo"><div class="brand-icon"><svg viewBox="0 0 64 64" fill="none" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 29 L32 9 L56 29" stroke="#E0E7FF"/><path d="M21 57 V31 H36 a9 9 0 0 1 0 18 H21" stroke="#FFFFFF"/></svg></div><div class="brand-word">Prop<span>Manager</span></div></div>
+  <button class="cloud-status cloud-mini" onclick="cloudPanel()" aria-label="Estado de sincronización" style="margin-left:auto;margin-right:8px;display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#D4D4D8;font:500 11px var(--sans);cursor:pointer"></button>
   <button class="topbar-btn" onclick="toggleSidebar()" aria-label="Menu">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20">
       <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -899,6 +903,7 @@ hr, .divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
       </div>
     </div>
     <div class="sidebar-footer">
+      <button class="cloud-status" onclick="cloudPanel()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 10px;margin-bottom:8px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#D4D4D8;font:500 12px var(--sans);cursor:pointer">Solo este dispositivo</button>
       <div style="text-align:center;padding:8px 0 10px">
         <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--sidebar-text2);margin-bottom:4px">Powered by</div>
         <div style="font-family:var(--serif);font-size:15px;color:var(--gold-mid);letter-spacing:-.2px">Carolina Gerosa</div>
@@ -1020,6 +1025,7 @@ function saveDB() {
       } catch(e2) { console.warn('localStorage save failed:', e2); }
     } else { console.warn('localStorage save failed:', e); }
   }
+  if(typeof cloudOnLocalSave === 'function') cloudOnLocalSave();
 }
 
 function loadDB() {
@@ -7903,6 +7909,234 @@ function enviarLiquidacionEmail(id) {
 
 
 // ============================================================
+// SINCRONIZACIÓN EN LA NUBE (Supabase) — mismos datos en todos los dispositivos
+// Tabla pm_data: una fila por usuario con todo el DB en JSON.
+// Sin librerías: Auth y REST de Supabase con fetch.
+// ============================================================
+// Si completás estos dos valores, ningún dispositivo tendrá que cargarlos a mano.
+var CLOUD_CONFIG = { url: 'https://jtiyirhogrdoszhyqqqq.supabase.co', anonKey: 'sb_publishable_04PNnAVSFFluqzaxrK-2og_58cNF06-' };   // proyecto ProManager-Agencia-Inmobiliaria (clave pública)
+
+var CLOUD = { pushing:false, timer:null, applying:false, status:'off', lastError:'', ready:false };
+var SUPA_READY = false;
+
+function cloudCfg() {
+  var s = {}; try { s = JSON.parse(localStorage.getItem('pm_cloud_cfg') || '{}'); } catch(e) {}
+  return { url: (CLOUD_CONFIG.url || s.url || '').replace(/\/+$/,''), key: CLOUD_CONFIG.anonKey || s.key || '' };
+}
+function cloudSession() { try { return JSON.parse(localStorage.getItem('pm_cloud_session') || 'null'); } catch(e) { return null; } }
+function cloudSetSession(s) { try { if(s) localStorage.setItem('pm_cloud_session', JSON.stringify(s)); else localStorage.removeItem('pm_cloud_session'); } catch(e) {} }
+function cloudMeta() { try { return JSON.parse(localStorage.getItem('pm_cloud_meta') || '{}'); } catch(e) { return {}; } }
+function cloudSetMeta(m) { try { localStorage.setItem('pm_cloud_meta', JSON.stringify(m)); } catch(e) {} }
+function cloudDevice() { var ua = navigator.userAgent; return /iPhone|iPad/.test(ua) ? 'iPhone/iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Navegador'; }
+
+function dbSnapshot() {
+  return {
+    inmuebles: DB.inmuebles, locadores: DB.locadores || [], nextId: DB.nextId,
+    inquilinos: DB.inquilinos, contratos: DB.contratos, cobros: DB.cobros, gastos: DB.gastos,
+    incidencias: DB.incidencias, proveedores: DB.proveedores || [], impuestos: DB.impuestos || [],
+    pagoImpuestos: DB.pagoImpuestos || [], migLocadorSRL: DB.migLocadorSRL || false, liquidaciones: DB.liquidaciones || []
+  };
+}
+function dbAplicar(data) {
+  if(!data) return;
+  ['inmuebles','inquilinos','contratos','cobros','gastos','incidencias','proveedores','impuestos','pagoImpuestos','liquidaciones'].forEach(function(k){ if(Array.isArray(data[k])) DB[k] = data[k]; });
+  if(data.locadores && data.locadores.length) DB.locadores = data.locadores;
+  if(data.nextId) DB.nextId = data.nextId;
+  DB.migLocadorSRL = data.migLocadorSRL || false;
+}
+function dbTieneDatos(d) { d = d || dbSnapshot(); return (d.contratos||[]).length + (d.inquilinos||[]).length + (d.cobros||[]).length > 0; }
+
+// ── Estado visible ─────────────────────────────────────────────
+function cloudSetStatus(st, err) {
+  CLOUD.status = st; if(err !== undefined) CLOUD.lastError = err;
+  SUPA_READY = st === 'ok' || st === 'saving';
+  var m = cloudMeta();
+  var txt = { off:'Solo este dispositivo', login:'Iniciá sesión para sincronizar', ok:'Sincronizado', saving:'Guardando en la nube…', error:'Sin conexión — se guardará al reconectar', conflict:'Revisar cambios' }[st] || st;
+  var col = { ok:'#34D399', saving:'#A5B4FC', error:'#F87171', conflict:'#FBBF24', login:'#FBBF24', off:'#A1A1AA' }[st] || '#A1A1AA';
+  var when = st === 'ok' && m.lastSync ? ' · ' + new Date(m.lastSync).toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' }) : '';
+  document.querySelectorAll('.cloud-status').forEach(function(el) {
+    el.innerHTML = '<span style="width:8px;height:8px;border-radius:4px;background:' + col + ';display:inline-block;flex-shrink:0"></span><span>' + txt + when + '</span>';
+  });
+}
+
+// ── API Supabase ───────────────────────────────────────────────
+function cloudAuth(grant, body) {
+  var c = cloudCfg();
+  return fetch(c.url + '/auth/v1/token?grant_type=' + grant, { method:'POST', headers:{ 'apikey':c.key, 'Content-Type':'application/json' }, body:JSON.stringify(body) })
+    .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error_description || j.msg || j.message || 'Error de acceso'); return j; }); })
+    .then(function(j){ var s = { access_token:j.access_token, refresh_token:j.refresh_token, expires_at:Math.floor(Date.now()/1000) + (j.expires_in||3600), user:{ id:j.user.id, email:j.user.email } }; cloudSetSession(s); return s; });
+}
+function cloudToken() {
+  var s = cloudSession(); if(!s) return Promise.reject(new Error('Sin sesión'));
+  if(s.expires_at - 60 > Date.now()/1000) return Promise.resolve(s);
+  return cloudAuth('refresh_token', { refresh_token:s.refresh_token }).catch(function(e){ cloudSetSession(null); throw e; });
+}
+function cloudRest(method, query, body, prefer) {
+  var c = cloudCfg();
+  return cloudToken().then(function(s) {
+    var h = { 'apikey':c.key, 'Authorization':'Bearer ' + s.access_token, 'Content-Type':'application/json' };
+    if(prefer) h['Prefer'] = prefer;
+    return fetch(c.url + '/rest/v1/pm_data' + query, { method:method, headers:h, body: body ? JSON.stringify(body) : undefined })
+      .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error(t || ('HTTP ' + r.status)); }); return r.status === 204 ? null : r.json(); });
+  });
+}
+function cloudPullMeta() { var s = cloudSession(); return cloudRest('GET', '?select=updated_at,device&owner=eq.' + s.user.id).then(function(rows){ return rows && rows[0] || null; }); }
+function cloudPullAll() { var s = cloudSession(); return cloudRest('GET', '?select=data,updated_at,device&owner=eq.' + s.user.id).then(function(rows){ return rows && rows[0] || null; }); }
+function cloudPushAll() {
+  var s = cloudSession(); var ts = new Date().toISOString();
+  return cloudRest('POST', '?on_conflict=owner', { owner:s.user.id, data:dbSnapshot(), updated_at:ts, device:cloudDevice() }, 'resolution=merge-duplicates,return=minimal')
+    .then(function(){ var m = cloudMeta(); m.lastSync = ts; m.dirty = false; cloudSetMeta(m); return ts; });
+}
+
+// ── Sincronización ─────────────────────────────────────────────
+function cloudAplicarRemoto(row) {
+  CLOUD.applying = true;
+  dbAplicar(row.data);
+  saveDB();
+  CLOUD.applying = false;
+  var m = cloudMeta(); m.lastSync = row.updated_at; m.dirty = false; cloudSetMeta(m);
+  if(typeof renderPage === 'function') renderPage();
+  if(typeof updateAlertaBadge === 'function') updateAlertaBadge();
+}
+
+function cloudSync(motivo) {
+  var cfg = cloudCfg(); if(!cfg.url || !cfg.key) { cloudSetStatus('off'); return Promise.resolve(); }
+  if(!cloudSession()) { cloudSetStatus('login'); return Promise.resolve(); }
+  if(CLOUD.pushing) return Promise.resolve();
+  var m = cloudMeta();
+  return cloudPullMeta().then(function(remote) {
+    if(!remote) {
+      CLOUD.ready = true;                                   // primera vez: la nube está vacía → subir lo de este dispositivo
+      if(!dbTieneDatos()) { cloudSetStatus('ok'); return; }
+      cloudSetStatus('saving');
+      return cloudPushAll().then(function(){ cloudSetStatus('ok'); toast('Tus datos se subieron a la nube ✓','success'); });
+    }
+    var remotoNuevo = !m.lastSync || remote.updated_at > m.lastSync;
+    var dispositivoVacio = typeof loaded !== 'undefined' && !loaded && !m.lastSync;   // primera vez en este dispositivo, sin datos propios
+    if(remotoNuevo) return cloudPullAll().then(function(row) {
+      if(JSON.stringify(row.data) === JSON.stringify(dbSnapshot())) {                  // mismos datos: no hay nada que decidir
+        var mm = cloudMeta(); mm.lastSync = row.updated_at; mm.dirty = false; cloudSetMeta(mm); cloudSetStatus('ok'); return;
+      }
+      var hayCambiosLocales = !dispositivoVacio && dbTieneDatos() && (m.dirty || !m.lastSync);
+      if(hayCambiosLocales) return cloudConflicto(row);
+      cloudAplicarRemoto(row); cloudSetStatus('ok');
+      if(motivo !== 'auto') toast('Datos actualizados desde ' + (row.device||'otro dispositivo'),'success');
+    });
+    if(m.dirty) { cloudSetStatus('saving'); return cloudPushAll().then(function(){ cloudSetStatus('ok'); }); }
+    cloudSetStatus('ok');
+  }).then(function(){ CLOUD.ready = true; }).catch(function(e) {
+    CLOUD.ready = true;
+    console.warn('Sync:', e);
+    if(/Sin sesión|refresh/i.test(e.message)) cloudSetStatus('login'); else cloudSetStatus('error', e.message);
+  });
+}
+
+// Llamado desde saveDB(): marca cambios pendientes y sube con un pequeño retraso
+function cloudOnLocalSave() {
+  if(CLOUD.applying || !CLOUD.ready) return;
+  var cfg = cloudCfg(); if(!cfg.url || !cfg.key || !cloudSession()) return;
+  var m = cloudMeta(); m.dirty = true; cloudSetMeta(m);
+  clearTimeout(CLOUD.timer);
+  cloudSetStatus('saving');
+  CLOUD.timer = setTimeout(cloudPushSeguro, 1500);
+}
+function cloudPushSeguro() {
+  if(CLOUD.pushing) { CLOUD.timer = setTimeout(cloudPushSeguro, 1000); return; }
+  CLOUD.pushing = true;
+  var m = cloudMeta();
+  cloudPullMeta().then(function(remote) {
+    if(remote && m.lastSync && remote.updated_at > m.lastSync) { CLOUD.pushing = false; CLOUD.ready = false; return cloudSync('auto'); }
+    return cloudPushAll().then(function(){ CLOUD.pushing = false; cloudSetStatus('ok'); });
+  }).catch(function(e){ CLOUD.pushing = false; console.warn('Push:', e); cloudSetStatus(/Sin sesión|refresh/i.test(e.message) ? 'login' : 'error', e.message); });
+}
+
+function cloudConflicto(row) {
+  cloudSetStatus('conflict');
+  var r = row.data || {};
+  var cuenta = function(d){ return (d.contratos||[]).length + ' contratos · ' + (d.inquilinos||[]).length + ' inquilinos · ' + (d.cobros||[]).filter(function(c){ return c.estado==='cobrado'; }).length + ' cobros pagados'; };
+  var bodyEl = document.createElement('div');
+  bodyEl.innerHTML =
+    '<p style="font-size:13.5px;color:var(--text2);margin-bottom:14px">Este dispositivo tiene datos distintos a los guardados en la nube. Elegí con cuáles querés seguir; los otros se reemplazan.</p>' +
+    '<div style="display:grid;gap:10px">' +
+      '<div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px"><div style="font-weight:600;font-size:13.5px">☁️ Nube</div><div style="font-size:12.5px;color:var(--text3)">Guardado desde ' + h(row.device||'otro dispositivo') + ' · ' + new Date(row.updated_at).toLocaleString('es-AR') + '<br>' + cuenta(r) + '</div></div>' +
+      '<div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px"><div style="font-weight:600;font-size:13.5px">📱 Este dispositivo (' + cloudDevice() + ')</div><div style="font-size:12.5px;color:var(--text3)">' + cuenta(dbSnapshot()) + '</div></div>' +
+    '</div>' +
+    '<p style="font-size:12px;color:var(--text3);margin-top:12px">Consejo: elegí el dispositivo donde cargaste los datos reales (normalmente la computadora). Antes de reemplazar, podés descargar un backup desde Gestión de datos.</p>';
+  var footer = modalFooter([
+    { label:'Usar los de este dispositivo', cls:'btn-secondary', action:function(){ closeModal(); cloudSetStatus('saving'); CLOUD.pushing = true;
+        cloudPushAll().then(function(){ CLOUD.pushing = false; cloudSetStatus('ok'); toast('La nube ahora tiene los datos de este dispositivo ✓','success'); })
+        .catch(function(e){ CLOUD.pushing = false; cloudSetStatus('error', e.message); }); } },
+    { label:'Usar los de la nube', cls:'btn-primary', action:function(){ closeModal(); cloudAplicarRemoto(row); cloudSetStatus('ok'); toast('Datos de la nube cargados ✓','success'); } }
+  ]);
+  openModal('Elegí qué datos conservar', bodyEl, false, footer);
+}
+
+// ── Pantallas: conexión e inicio de sesión ─────────────────────
+function cloudPanel() {
+  var cfg = cloudCfg(), s = cloudSession(), m = cloudMeta();
+  var bodyEl = document.createElement('div');
+  if(!cfg.url || !cfg.key) {
+    bodyEl.innerHTML =
+      '<p style="font-size:13.5px;color:var(--text2);margin-bottom:14px">Para ver y editar los mismos datos desde el celular y la computadora, PropManager guarda una copia en tu proyecto de <strong>Supabase</strong>. Pegá acá los datos de conexión (Supabase → Project Settings → API).</p>' +
+      '<div class="form-grid">' +
+      '<div class="form-field full"' + (CLOUD_CONFIG.url ? ' style="display:none"' : '') + '><label for="cl-url">Project URL</label><input id="cl-url" type="url" placeholder="https://xxxx.supabase.co" value="' + h(cfg.url) + '"></div>' +
+      '<div class="form-field full"><label for="cl-key">anon public key (o publishable key)</label><input id="cl-key" type="text" placeholder="eyJhbGciOi… o sb_publishable_…"></div></div>';
+    openModal('Sincronizar dispositivos', bodyEl, false, modalFooter([{ label:'Guardar y continuar', cls:'btn-primary', action:function(){
+      var url = CLOUD_CONFIG.url || document.getElementById('cl-url').value.trim(), key = document.getElementById('cl-key').value.trim();
+      if(!/^https:\/\/.+\.supabase\.co\/?$/.test(url) || key.length < 20) { toast('Revisá la URL y la clave','error'); return; }
+      try { localStorage.setItem('pm_cloud_cfg', JSON.stringify({ url:url, key:key })); } catch(e) {}
+      closeModal(); setTimeout(cloudLogin, 150);
+    }}]));
+    return;
+  }
+  if(!s) { cloudLogin(); return; }
+  bodyEl.innerHTML =
+    '<div style="background:var(--surface2);border-radius:var(--radius);padding:14px;font-size:13px;line-height:1.7">' +
+    '<div><strong>Cuenta:</strong> ' + h(s.user.email) + '</div>' +
+    '<div><strong>Estado:</strong> <span class="cloud-status" style="display:inline-flex;align-items:center;gap:6px"></span></div>' +
+    '<div><strong>Última sincronización:</strong> ' + (m.lastSync ? new Date(m.lastSync).toLocaleString('es-AR') : '—') + '</div>' +
+    (CLOUD.status === 'error' && CLOUD.lastError ? '<div style="color:var(--red);font-size:12px;margin-top:6px">' + h(String(CLOUD.lastError).slice(0,200)) + '</div>' : '') +
+    '</div>' +
+    '<p style="font-size:12px;color:var(--text3);margin-top:12px">Los cambios se guardan solos en la nube unos segundos después de hacerlos. Al abrir la app en otro dispositivo, se cargan automáticamente.</p>';
+  openModal('Sincronización', bodyEl, false, modalFooter([
+    { label:'Cerrar sesión', cls:'btn-danger', action:function(){ if(!confirm('¿Cerrar sesión en este dispositivo? Los datos quedan guardados en la nube.')) return; cloudSetSession(null); cloudSetStatus('login'); closeModal(); } },
+    { label:'Sincronizar ahora', cls:'btn-primary', action:function(){ closeModal(); cloudSync('manual'); } }
+  ]));
+  cloudSetStatus(CLOUD.status);
+}
+
+function cloudLogin() {
+  var bodyEl = document.createElement('div');
+  bodyEl.innerHTML =
+    '<p style="font-size:13.5px;color:var(--text2);margin-bottom:14px">Iniciá sesión para ver los mismos datos en todos tus dispositivos.</p>' +
+    '<div class="form-grid">' +
+    '<div class="form-field full"><label for="cl-email">Email</label><input id="cl-email" type="email" autocomplete="username" inputmode="email"></div>' +
+    '<div class="form-field full"><label for="cl-pass">Contraseña</label><input id="cl-pass" type="password" autocomplete="current-password"></div></div>' +
+    '<div id="cl-err" style="color:var(--red);font-size:12.5px;margin-top:8px"></div>';
+  openModal('Iniciar sesión', bodyEl, false, modalFooter([{ label:'Entrar', cls:'btn-primary', action:function(){
+    var email = document.getElementById('cl-email').value.trim(), pass = document.getElementById('cl-pass').value;
+    var err = document.getElementById('cl-err');
+    if(!email || !pass) { err.textContent = 'Completá email y contraseña'; return; }
+    err.textContent = 'Conectando…';
+    cloudAuth('password', { email:email, password:pass }).then(function(){
+      closeModal(); toast('Sesión iniciada ✓','success'); cloudSync('login');
+    }).catch(function(e){ err.textContent = /invalid/i.test(e.message) ? 'Email o contraseña incorrectos' : e.message; });
+  }}]));
+  setTimeout(function(){ var e = document.getElementById('cl-pass'); if(e) e.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') document.querySelector('#modal-ov .modal-footer .btn-primary').click(); }); }, 50);
+}
+
+function cloudInit() {
+  var cfg = cloudCfg();
+  if(!cfg.url || !cfg.key) { cloudSetStatus('off'); return; }
+  if(!cloudSession()) { cloudSetStatus('login'); setTimeout(cloudLogin, 800); return; }
+  cloudSync('inicio');
+  // Al volver a la app (cambio de pestaña o desbloqueo del celular) y cada minuto, traer cambios
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') cloudSync('auto'); });
+  window.addEventListener('online', function(){ cloudSync('auto'); });
+  setInterval(function(){ if(document.visibilityState === 'visible' && !document.getElementById('modal-ov')) cloudSync('auto'); }, 60000);
+}
+
+// ============================================================
 // INIT
 // ============================================================
 // Load persisted data
@@ -7911,6 +8145,7 @@ migrarLocadorPorInmueble();
 migrarLocadorSRL();
 nav('dashboard');
 chequearResumenMensual();
+cloudInit();
 if(loaded) {
   // Show subtle indicator that data was restored
   setTimeout(function(){

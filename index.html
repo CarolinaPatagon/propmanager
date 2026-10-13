@@ -1274,6 +1274,54 @@ function ctSyncCobrosInicio(ct, completar) {
   }
   return { quitados:quitados, agregados:agregados };
 }
+// ── Fin de contrato ────────────────────────────────────────────
+// Mes vencido: el último período cobrable es el mes siguiente al fin del contrato
+// (contrato hasta el 28/2 → último cobro en marzo).
+function ctUltimoKeyCobro(ct, finISO) {
+  var f = finISO !== undefined ? finISO : (ct && ct.fin);
+  if(!f) return null;
+  var p = String(f).split('-'); if(p.length < 2) return null;
+  return parseInt(p[0])*12 + (parseInt(p[1])-1) + 1;
+}
+// Calcula (sin modificar nada) qué pasaría al ajustar los cobros a un fin dado
+function ctPlanCobrosFin(ct, finISO) {
+  var last = ctUltimoKeyCobro(ct, finISO);
+  var res = { quitar:[], pagadosFuera:[], agregar:[] };
+  if(last === null || !ct) return res;
+  var propios = DB.cobros.filter(function(c){ return c.ctId === ct.id; });
+  propios.forEach(function(c){
+    var k = periodoKey(c.mes); if(k === null || k <= last) return;
+    if(c.estado === 'cobrado' || cobroPagado(c) > 0) res.pagadosFuera.push(c); else res.quitar.push(c);
+  });
+  var keys = propios.map(function(c){ return periodoKey(c.mes); }).filter(function(k){ return k !== null; });
+  if(keys.length) {
+    var maxK = Math.max.apply(null, keys);
+    for(var k = maxK + 1; k <= last; k++) res.agregar.push(k);
+  }
+  return res;
+}
+// Ajusta los cobros al fin del contrato: borra los posteriores SIN pagos y agrega los
+// meses que falten si el contrato se extendió. Nunca toca cobros con pagos registrados.
+function ctSyncCobrosFin(ct) {
+  var plan = ctPlanCobrosFin(ct);
+  var ids = plan.quitar.map(function(c){ return c.id; });
+  if(ids.length) {
+    DB.cobros = DB.cobros.filter(function(c){ return ids.indexOf(c.id) < 0; });
+    (DB.inquilinos||[]).forEach(function(i){ (i.comprobantes||[]).forEach(function(cp){ if(cp.cobroId && ids.indexOf(cp.cobroId) > -1) cp.cobroId = null; }); });
+  }
+  if(plan.agregar.length) {
+    var ref = DB.cobros.filter(function(c){ return c.ctId === ct.id && c.vence; }).slice(-1)[0];
+    var dia = ref ? (parseInt(String(ref.vence).split('-')[2]) || 10) : 10;
+    plan.agregar.forEach(function(k){
+      var newId = DB.cobros.length ? Math.max.apply(null, DB.cobros.map(function(c){ return c.id; })) + 1 : 1;
+      var anio = Math.floor(k/12), mes = k%12 + 1;
+      DB.cobros.push({ id:newId, ctId:ct.id, mes:keyToLabel(k), monto:Number(ct.monto)||0, moneda:monedaCt(ct), estado:'pendiente',
+        vence: anio + '-' + String(mes).padStart(2,'0') + '-' + String(dia).padStart(2,'0'), fechaEmision:new Date().toLocaleDateString('es-AR'), pagos:[] });
+    });
+  }
+  return { quitados:ids.length, agregados:plan.agregar.length, pagadosFuera:plan.pagadosFuera.length };
+}
+
 // Limpieza al cargar: elimina cobros generados antes del primer mes cobrable (idempotente)
 function migrarCobrosMesVencido() {
   var total = 0;
@@ -3420,12 +3468,6 @@ function renderInqPage(el) {
 function showInqDetail(id) {
   var i = getInq(id); if(!i) return;
   var inm = i.inmId ? getInm(i.inmId) : null;
-  var pagoRows = DB.cobros.filter(function(c){
-    var ct = getCt(c.ctId); return ct && ct.inqId === id;
-  }).map(function(c){
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">' +
-      '<span>' + h(c.mes) + '</span><span>' + fmtPeso(c.monto) + '</span>' + statusBadge(c.estado) + '</div>';
-  }).join('') || '<div style="font-size:13px;color:var(--text3)">Sin registros</div>';
   var initials = i.nombre.split(' ').map(function(n){return n[0];}).join('').slice(0,2);
 
   var body = document.createElement('div');
@@ -3491,10 +3533,28 @@ function showInqDetail(id) {
   });
   body.appendChild(infoGrid);
 
-  // Pagos
+  // Pagos — historial editable + acceso directo al contrato
+  var ctInq = DB.contratos.find(function(c){ return c.inqId === id && c.estado === 'vigente'; }) ||
+              DB.contratos.filter(function(c){ return c.inqId === id; }).slice(-1)[0];
   var pagosDiv = document.createElement('div');
   pagosDiv.style.cssText = 'border-top:1px solid var(--border);padding-top:14px';
-  pagosDiv.innerHTML = '<div style="font-size:12px;font-weight:600;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Historial de pagos</div>' + pagoRows;
+  var pagosHdr = document.createElement('div');
+  pagosHdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap';
+  pagosHdr.innerHTML = '<div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Historial de pagos' +
+    (ctInq ? '<span style="text-transform:none;letter-spacing:0;font-weight:400;margin-left:8px">· ' + h(ctInq.num) + ' · ' + h(ctInq.inicio||'—') + ' → ' + h(ctInq.fin||'sin fin') + '</span>' : '') + '</div>';
+  if(ctInq) {
+    var btnCt = document.createElement('button');
+    btnCt.className = 'btn btn-secondary';
+    btnCt.style.fontSize = '12px';
+    btnCt.textContent = '✏ Editar contrato';
+    btnCt.onclick = function(){ closeModal(); setTimeout(function(){ editarContrato(ctInq.id, id); }, 150); };
+    pagosHdr.appendChild(btnCt);
+  }
+  pagosDiv.appendChild(pagosHdr);
+  var pagosContent = document.createElement('div');
+  pagosContent.id = 'historial-cobros-' + id;
+  renderHistorialCobros(pagosContent, id);
+  pagosDiv.appendChild(pagosContent);
   body.appendChild(pagosDiv);
 
   // ---- Contrato firmado ----
@@ -3561,19 +3621,6 @@ function showInqDetail(id) {
   renderCompList(compList, i);
   compDiv.appendChild(compList);
   body.appendChild(compDiv);
-
-  // ---- Historial de pagos ----
-  var pagosDiv = document.createElement('div');
-  pagosDiv.style.cssText = 'border-top:1px solid var(--border);padding-top:14px;margin-top:16px';
-  var pagosTitle = document.createElement('div');
-  pagosTitle.style.cssText = 'font-size:12px;font-weight:600;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em';
-  pagosTitle.textContent = 'Historial de cobros registrados';
-  pagosDiv.appendChild(pagosTitle);
-  var pagosContent = document.createElement('div');
-  pagosContent.id = 'historial-cobros-' + id;
-  renderHistorialCobros(pagosContent, id);
-  pagosDiv.appendChild(pagosContent);
-  body.appendChild(pagosDiv);
 
   openModal('Ficha del inquilino', body, true);
 }
@@ -4063,7 +4110,8 @@ function onCpCobroChange() {
 function renderHistorialCobros(el, inqId) {
   var rows = DB.cobros.filter(function(c){
     var ct = getCt(c.ctId); return ct && ct.inqId === inqId;
-  }).sort(function(a,b){ return (b.id||0)-(a.id||0); });
+  }).sort(function(a,b){ var ka = periodoKey(a.mes), kb = periodoKey(b.mes);
+    if(ka === null || kb === null) return (a.id||0)-(b.id||0); return ka - kb; });
 
   if(!rows.length) {
     el.innerHTML = '<div style="font-size:13px;color:var(--text3);padding:8px 0">Sin registros</div>';
@@ -4084,10 +4132,27 @@ function renderHistorialCobros(el, inqId) {
       '<div style="font-size:14px;font-weight:600;color:var(--text)">'+fmtPeso(c.monto)+'</div>' +
       statusBadge(c.estado) +
       '</div>' +
-      '<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px" onclick="editarCobro('+c.id+')" title="Editar / corregir este cobro">✏</button>' +
+      '<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px" onclick="editarCobro('+c.id+','+inqId+')" title="Editar / corregir este cobro">✏</button>' +
+      ((c.estado !== 'cobrado' && !cobroPagado(c)) ?
+        '<button class="btn btn-ghost" style="font-size:11px;padding:4px 8px;color:var(--red)" onclick="eliminarCobroFicha('+c.id+','+inqId+')" title="Eliminar este cobro pendiente">🗑</button>' :
+        '<span style="display:inline-block;width:30px"></span>') +
       '</div>' +
       '</div>';
   }).join('');
+}
+
+// Elimina un cobro sin pagos desde la ficha del inquilino
+function eliminarCobroFicha(cobroId, inqId) {
+  var c = DB.cobros.find(function(x){ return x.id === cobroId; }); if(!c) return;
+  if(c.estado === 'cobrado' || cobroPagado(c)) { toast('Este cobro tiene pagos: revertilo primero desde ✏','error'); return; }
+  if(!confirm('¿Eliminar el cobro de ' + String(c.mes).replace(/\s+/g,' ') + '?')) return;
+  DB.cobros = DB.cobros.filter(function(x){ return x.id !== cobroId; });
+  (DB.inquilinos||[]).forEach(function(i){ (i.comprobantes||[]).forEach(function(cp){ if(cp.cobroId === cobroId) cp.cobroId = null; }); });
+  saveDB();
+  var el = inqId ? document.getElementById('historial-cobros-' + inqId) : null;
+  if(el) renderHistorialCobros(el, inqId); else renderPage();
+  if(typeof updateAlertaBadge === 'function') updateAlertaBadge();
+  toast('Cobro eliminado','success');
 }
 
 
@@ -4290,7 +4355,7 @@ function ctSyncInquilino(inqId) {
   if(ct) inq.inmId = ct.inmId;
 }
 
-function editarContrato(ctId) {
+function editarContrato(ctId, volverInqId) {
   var c = getCt(ctId); if(!c) return;
   var mon = monedaCt(c);
   var opt = function(list, sel, lab){ return list.map(function(x){ return '<option value="' + x.id + '"' + (x.id===sel?' selected':'') + '>' + h(lab(x)) + '</option>'; }).join(''); };
@@ -4309,12 +4374,18 @@ function editarContrato(ctId) {
       ['vigente','finalizado','rescindido'].map(function(s){ return '<option' + (c.estado===s?' selected':'') + '>' + s + '</option>'; }).join('') + '</select></div>' +
     '<div class="form-field full"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer">' +
       '<input id="ec-actcob" type="checkbox" checked style="width:18px;height:18px"> Aplicar monto y moneda a los cobros pendientes sin pagos (' + res.sinPago.length + ')</label></div>' +
+    '<div class="form-field full"><label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer">' +
+      '<input id="ec-syncfin" type="checkbox" checked style="width:18px;height:18px"> Ajustar los cobros a la fecha de fin del contrato</label>' +
+      '<div id="ec-finhint" style="font-size:12px;color:var(--text3);margin-top:4px;padding-left:26px"></div></div>' +
     '</div>' +
     '<div style="font-size:12px;color:var(--text3);margin-top:10px">' + h(c.num) + ' · ' + res.total + ' cobros generados · ' + res.conPago.length + ' con pagos registrados</div>';
 
   var footer = modalFooter([
     { label:'🗑 Eliminar', cls:'btn-danger', action:function(){ eliminarContrato(ctId); } },
     { label:'Guardar cambios', cls:'btn-primary', action:function(){
+      var finNuevo = document.getElementById('ec-fin').value;
+      var iniNuevo = document.getElementById('ec-ini').value;
+      if(finNuevo && iniNuevo && finNuevo < iniNuevo) { toast('La fecha de fin no puede ser anterior al inicio','error'); return; }
       var inmAnt = c.inmId, inqAnt = c.inqId, iniAnt = c.inicio;
       c.inmId = parseFloat(document.getElementById('ec-inm').value);
       c.inqId = parseFloat(document.getElementById('ec-inq').value);
@@ -4328,15 +4399,39 @@ function editarContrato(ctId) {
         res.sinPago.forEach(function(cb){ cb.monto = c.monto; cb.moneda = c.moneda; });
       }
       var syncIni = c.inicio !== iniAnt ? ctSyncCobrosInicio(c, true) : { quitados:0, agregados:0 };
+      var syncFin = (c.fin && document.getElementById('ec-syncfin').checked) ? ctSyncCobrosFin(c) : { quitados:0, agregados:0, pagadosFuera:0 };
       [inmAnt, c.inmId].forEach(ctSyncInmueble);
       [inqAnt, c.inqId].forEach(ctSyncInquilino);
-      saveDB(); closeModal(); nav('contratos');
-      var extra = (syncIni.quitados ? ' · ' + syncIni.quitados + ' cobro' + (syncIni.quitados>1?'s':'') + ' anterior' + (syncIni.quitados>1?'es':'') + ' al inicio eliminado' + (syncIni.quitados>1?'s':'') : '') +
-        (syncIni.agregados ? ' · ' + syncIni.agregados + ' cobro' + (syncIni.agregados>1?'s':'') + ' agregado' + (syncIni.agregados>1?'s':'') : '');
+      saveDB(); closeModal();
+      if(volverInqId) { renderPage(); setTimeout(function(){ showInqDetail(c.inqId); }, 150); } else nav('contratos');
+      if(typeof updateAlertaBadge === 'function') updateAlertaBadge();
+      var pl = function(n, sing, plur){ return n + ' ' + (n>1?plur:sing); };
+      var extra = (syncIni.quitados ? ' · ' + pl(syncIni.quitados,'cobro anterior al inicio eliminado','cobros anteriores al inicio eliminados') : '') +
+        (syncIni.agregados ? ' · ' + pl(syncIni.agregados,'cobro agregado','cobros agregados') : '') +
+        (syncFin.quitados ? ' · ' + pl(syncFin.quitados,'cobro posterior al fin eliminado','cobros posteriores al fin eliminados') : '') +
+        (syncFin.agregados ? ' · ' + pl(syncFin.agregados,'cobro agregado hasta el nuevo fin','cobros agregados hasta el nuevo fin') : '');
       toast('Contrato ' + c.num + ' actualizado ✓' + extra,'success');
+      if(syncFin.pagadosFuera) setTimeout(function(){ toast(pl(syncFin.pagadosFuera,'cobro con pagos queda','cobros con pagos quedan') + ' después del fin (no se borran)','error'); }, 400);
     }}
   ]);
   openModal('Editar contrato ' + c.num, bodyEl, false, footer);
+  // Vista previa en vivo del ajuste de cobros al cambiar la fecha de fin
+  var finHint = function(){
+    var el = document.getElementById('ec-finhint'); if(!el) return;
+    var finVal = document.getElementById('ec-fin').value;
+    var chk = document.getElementById('ec-syncfin').checked;
+    if(!finVal) { el.textContent = 'Sin fecha de fin: no se ajustan cobros.'; return; }
+    if(!chk) { el.textContent = 'No se modificarán los cobros existentes.'; return; }
+    var last = ctUltimoKeyCobro(c, finVal);
+    var plan = ctPlanCobrosFin(c, finVal);
+    var partes = [];
+    if(plan.quitar.length) partes.push('se eliminarán ' + plan.quitar.length + ' cobro' + (plan.quitar.length>1?'s':'') + ' pendiente' + (plan.quitar.length>1?'s':'') + ' (' + plan.quitar.map(function(x){ return x.mes.replace(/\s+/g,' '); }).slice(0,3).join(', ') + (plan.quitar.length>3?'…':'') + ')');
+    if(plan.agregar.length) partes.push('se agregarán ' + plan.agregar.length + ' cobro' + (plan.agregar.length>1?'s':''));
+    if(plan.pagadosFuera.length) partes.push(plan.pagadosFuera.length + ' con pagos se conserva' + (plan.pagadosFuera.length>1?'n':''));
+    el.innerHTML = 'Último cobro (mes vencido): <strong>' + h(keyToLabel(last)) + '</strong>' + (partes.length ? ' · ' + h(partes.join(' · ')) : ' · los cobros ya están ajustados');
+  };
+  ['ec-fin','ec-syncfin'].forEach(function(idf){ var e = document.getElementById(idf); if(e) e.addEventListener('change', finHint); });
+  finHint();
 }
 
 function eliminarContrato(ctId) {
@@ -6201,7 +6296,22 @@ function factAcciones(c, compacto) {
   }
   return '<button class="btn btn-green" style="'+fs+'" onclick="subirComprobante('+c.id+')" title="Subir comprobante y registrar pago">📎 Comprobante</button>' +
          '<button class="btn btn-secondary" style="'+fs+'" onclick="registrarPago('+c.id+')">' + (cobroPagado(c)>0 ? '+ Pago' : '✓ Pago') + '</button>' +
-         '<button class="btn btn-ghost" style="'+fs+'" onclick="editarCobro('+c.id+')" aria-label="Editar cobro">✏</button>' + compBadge;
+         '<button class="btn btn-ghost" style="'+fs+'" onclick="editarCobro('+c.id+')" aria-label="Editar cobro" title="Editar cobro">✏</button>' +
+         (cobroPagado(c) > 0 ? '' : '<button class="btn btn-ghost" style="'+fs+';color:var(--red)" onclick="eliminarCobroFicha('+c.id+')" aria-label="Eliminar cobro" title="Eliminar este cobro">🗑</button>') +
+         compBadge;
+}
+
+// Desde Cobros: borra de una vez los cobros sin pagos posteriores al fin del contrato
+function factAjustarFin(ctId) {
+  var ct = getCt(ctId); if(!ct) return;
+  var plan = ctPlanCobrosFin(ct);
+  if(!plan.quitar.length) { toast('Los cobros ya están ajustados al fin del contrato','success'); return; }
+  if(!confirm('El contrato ' + ct.num + ' termina el ' + String(ct.fin).split('-').reverse().join('/') +
+    '.\n¿Eliminar los ' + plan.quitar.length + ' cobros pendientes posteriores (desde ' + String(plan.quitar[0].mes).replace(/\s+/g,' ') + ')?')) return;
+  var r = ctSyncCobrosFin(ct);
+  saveDB(); renderPage();
+  if(typeof updateAlertaBadge === 'function') updateAlertaBadge();
+  toast(r.quitados + ' cobro' + (r.quitados!==1?'s':'') + ' eliminado' + (r.quitados!==1?'s':'') + ' ✓','success');
 }
 
 function factLineaCobro(c, etiqueta) {
@@ -6278,6 +6388,12 @@ function factRowHTML(r) {
         return '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:' + color + ';margin:12px 0 2px">' + titulo + '</div>' +
           items.map(function(x){ return factLineaCobro(x.c); }).join('');
       };
+      var planFin = ctPlanCobrosFin(ct);
+      html += '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:12px;color:var(--text3)">' +
+        '<span>Contrato ' + h(ct.num) + ' · ' + h(ct.inicio ? ct.inicio.split('-').reverse().join('/') : '—') + ' → ' + h(ct.fin ? ct.fin.split('-').reverse().join('/') : 'sin fin') + '</span>' +
+        '<button class="btn btn-ghost" style="font-size:12px;padding:4px 8px" onclick="editarContrato(' + ct.id + ')">✏ Editar contrato</button>' +
+        (planFin.quitar.length ? '<button class="btn btn-ghost" style="font-size:12px;padding:4px 8px;color:var(--red)" onclick="factAjustarFin(' + ct.id + ')">✂ Quitar ' + planFin.quitar.length + ' cobro' + (planFin.quitar.length!==1?'s':'') + ' posteriores al fin</button>' : '') +
+        '</div>';
       html += '<div>' +
         sec('Meses anteriores adeudados', r.deudas, 'var(--red)') +
         sec('Próximos meses', r.futuros, 'var(--amber)') +
@@ -6927,7 +7043,7 @@ function eliminarPagoParcial(cobroId, pagoId) {
   registrarPago(cobroId);
 }
 
-function editarCobro(cobroId) {
+function editarCobro(cobroId, volverInqId) {
   var cobro = DB.cobros.find(function(c){return c.id===cobroId;}); if(!cobro) return;
   var ct = getCt(cobro.ctId); var inq = ct?getInq(ct.inqId):null; var inm = ct?getInm(ct.inmId):null;
   var medios = ['Transferencia bancaria','Efectivo','Cheque','Otro'];
@@ -6972,7 +7088,9 @@ function editarCobro(cobroId) {
       var hoyStr = new Date().toISOString().split('T')[0];
       cobro.estado = (cobro.vence && cobro.vence < hoyStr) ? 'vencido' : 'pendiente';
     }
-    saveDB(); closeModal(); nav('facturacion'); toast('Cobro actualizado ✓','success');
+    saveDB(); closeModal();
+    if(volverInqId) { renderPage(); setTimeout(function(){ showInqDetail(volverInqId); }, 150); } else nav('facturacion');
+    toast('Cobro actualizado ✓','success');
   }}];
 
   if(cobro.estado === 'cobrado') {
@@ -6984,7 +7102,9 @@ function editarCobro(cobroId) {
       cobro.referencia = '';
       cobro.pagos = [];
       delete cobro.montoPagado;
-      saveDB(); closeModal(); nav('facturacion'); toast('Cobro revertido a pendiente','success');
+      saveDB(); closeModal();
+      if(volverInqId) { renderPage(); setTimeout(function(){ showInqDetail(volverInqId); }, 150); } else nav('facturacion');
+      toast('Cobro revertido a pendiente','success');
     }});
   }
 

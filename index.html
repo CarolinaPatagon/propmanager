@@ -983,10 +983,8 @@ function saveDB() {
   try {
     // Save only mutable data (not static template config)
     var data = {
-      inmuebles: DB.inmuebles.map(function(p) {
-        var p2 = Object.assign({}, p);
-        return p2;
-      }),
+      // Las fotos NO van a localStorage (límite ~5 MB): se guardan aparte en IndexedDB
+      inmuebles: DB.inmuebles.map(function(p) { return Object.assign({}, p, {fotos:[]}); }),
       locadores: DB.locadores || [],
       nextId: DB.nextId,
       inquilinos: DB.inquilinos,
@@ -1021,11 +1019,85 @@ function saveDB() {
           liquidaciones: DB.liquidaciones || []
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data2));
-        toast('Guardado sin fotos (espacio insuficiente)', '');
-      } catch(e2) { console.warn('localStorage save failed:', e2); }
+      } catch(e2) { console.warn('localStorage save failed:', e2); toast('⚠ No hay espacio para guardar: exportá un backup y borrá comprobantes viejos','error'); }
     } else { console.warn('localStorage save failed:', e); }
   }
+  fotosGuardarIDB();
   if(typeof cloudOnLocalSave === 'function') cloudOnLocalSave();
+}
+
+// ============================================================
+// FOTOS DE INMUEBLES — IndexedDB (cientos de MB disponibles) + compresión
+// ============================================================
+var FOTOS_IDB = null;          // conexión
+var FOTOS_LISTAS = false;      // no escribir en IDB hasta haber leído lo guardado
+var FOTOS_FIRMA = {};          // inmId -> firma de lo último guardado (evita reescrituras)
+function fotosAbrirIDB() {
+  if(FOTOS_IDB) return Promise.resolve(FOTOS_IDB);
+  return new Promise(function(res, rej){
+    if(!window.indexedDB) return rej(new Error('IndexedDB no disponible'));
+    var rq = indexedDB.open('propmanager_fotos', 1);
+    rq.onupgradeneeded = function(){ rq.result.createObjectStore('fotos'); };
+    rq.onsuccess = function(){ FOTOS_IDB = rq.result; res(FOTOS_IDB); };
+    rq.onerror = function(){ rej(rq.error); };
+  });
+}
+function fotosFirma(arr) { return (arr||[]).length + ':' + (arr||[]).reduce(function(s,x){ return s + String(x).length; }, 0); }
+function fotosGuardarIDB() {
+  if(!FOTOS_LISTAS) return;
+  fotosAbrirIDB().then(function(db){
+    var tx = db.transaction('fotos', 'readwrite'), st = tx.objectStore('fotos');
+    DB.inmuebles.forEach(function(p){
+      var f = fotosFirma(p.fotos);
+      if(FOTOS_FIRMA[p.id] === f) return;
+      if(p.fotos && p.fotos.length) st.put(p.fotos, p.id); else st.delete(p.id);
+      FOTOS_FIRMA[p.id] = f;
+    });
+    tx.onerror = function(){ console.warn('No se pudieron guardar las fotos', tx.error); toast('⚠ No se pudieron guardar las fotos','error'); };
+  }).catch(function(e){ console.warn(e); });
+}
+// Lee las fotos guardadas y las une a los inmuebles. Migra las que hubiera en localStorage.
+function fotosCargarIDB() {
+  return fotosAbrirIDB().then(function(db){
+    return new Promise(function(res){
+      var out = {}, st = db.transaction('fotos','readonly').objectStore('fotos');
+      var cur = st.openCursor();
+      cur.onsuccess = function(){ var c = cur.result; if(c){ out[c.key] = c.value; c.continue(); } else res(out); };
+      cur.onerror = function(){ res(out); };
+    });
+  }).then(function(guardadas){
+    DB.inmuebles.forEach(function(p){
+      if(!p.fotos) p.fotos = [];
+      var g = guardadas[p.id];
+      if(g && g.length && !p.fotos.length) p.fotos = g;
+      FOTOS_FIRMA[p.id] = fotosFirma(g);
+    });
+    FOTOS_LISTAS = true;
+    fotosGuardarIDB();                     // guarda las que vinieran del almacenamiento viejo
+    if(typeof renderPage === 'function' && PAGE === 'inmuebles') renderPage();
+  }).catch(function(e){ console.warn('Fotos: IndexedDB no disponible', e); FOTOS_LISTAS = true; });
+}
+// Reduce la foto (máx. 1600 px, JPEG) antes de guardarla: de 4-8 MB a ~200-400 KB
+function fotoComprimir(file) {
+  return new Promise(function(res){
+    var r = new FileReader();
+    r.onload = function(e){
+      var src = e.target.result;
+      var img = new Image();
+      img.onload = function(){
+        var MAX = 1600, w = img.width, hgt = img.height, k = Math.min(1, MAX / Math.max(w, hgt));
+        var cv = document.createElement('canvas'); cv.width = Math.round(w*k); cv.height = Math.round(hgt*k);
+        var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0,0,cv.width,cv.height);
+        cx.drawImage(img, 0, 0, cv.width, cv.height);
+        var out = cv.toDataURL('image/jpeg', 0.8);
+        res(out.length < src.length ? out : src);
+      };
+      img.onerror = function(){ res(src); };
+      img.src = src;
+    };
+    r.onerror = function(){ res(null); };
+    r.readAsDataURL(file);
+  });
 }
 
 function loadDB() {
@@ -1564,18 +1636,16 @@ function renderPhotoZone(zone, inm) {
 
 function handlePhotoUpload(inmId, input, zone) {
   var inm = getInm(inmId); if(!inm) return;
-  var files = Array.from(input.files); var loaded = 0;
-  files.forEach(function(file) {
-    var r = new FileReader();
-    r.onload = function(e) {
-      inm.fotos.push(e.target.result); loaded++;
-      if(loaded === files.length) {
-        renderPhotoZone(zone, inm);
-        refreshGrid();
-        saveDB(); toast(files.length + ' foto' + (files.length>1?'s':'') + ' agregada' + (files.length>1?'s':''), 'success');
-      }
-    };
-    r.readAsDataURL(file);
+  var files = Array.from(input.files).filter(function(f){ return /^image\//.test(f.type); });
+  if(!files.length) return;
+  if(!inm.fotos) inm.fotos = [];
+  toast('Procesando ' + files.length + ' foto' + (files.length>1?'s':'') + '…', '');
+  Promise.all(files.map(fotoComprimir)).then(function(lista){
+    lista.forEach(function(src){ if(src) inm.fotos.push(src); });
+    renderPhotoZone(zone, inm);
+    refreshGrid();
+    saveDB(); toast(files.length + ' foto' + (files.length>1?'s':'') + ' agregada' + (files.length>1?'s':''), 'success');
+    input.value = '';
   });
 }
 
@@ -8201,7 +8271,7 @@ function cloudDevice() { var ua = navigator.userAgent; return /iPhone|iPad/.test
 
 function dbSnapshot() {
   return {
-    inmuebles: DB.inmuebles, locadores: DB.locadores || [], nextId: DB.nextId,
+    inmuebles: DB.inmuebles.map(function(p){ return Object.assign({}, p, {fotos:[]}); }), locadores: DB.locadores || [], nextId: DB.nextId,
     inquilinos: DB.inquilinos, contratos: DB.contratos, cobros: DB.cobros, gastos: DB.gastos,
     incidencias: DB.incidencias, proveedores: DB.proveedores || [], impuestos: DB.impuestos || [],
     pagoImpuestos: DB.pagoImpuestos || [], migLocadorSRL: DB.migLocadorSRL || false, liquidaciones: DB.liquidaciones || []
@@ -8209,6 +8279,11 @@ function dbSnapshot() {
 }
 function dbAplicar(data) {
   if(!data) return;
+  // Fotos: la nube no las trae; se conservan las locales (y se adoptan las que vengan de versiones viejas)
+  if(Array.isArray(data.inmuebles)) {
+    var fotosLoc = {}; DB.inmuebles.forEach(function(p){ fotosLoc[p.id] = p.fotos || []; });
+    data.inmuebles.forEach(function(p){ if(!(p.fotos && p.fotos.length) && fotosLoc[p.id] && fotosLoc[p.id].length) p.fotos = fotosLoc[p.id]; if(!p.fotos) p.fotos = []; });
+  }
   ['inmuebles','inquilinos','contratos','cobros','gastos','incidencias','proveedores','impuestos','pagoImpuestos','liquidaciones'].forEach(function(k){ if(Array.isArray(data[k])) DB[k] = data[k]; });
   if(data.locadores && data.locadores.length) DB.locadores = data.locadores;
   if(data.nextId) DB.nextId = data.nextId;
@@ -8412,6 +8487,7 @@ function cloudInit() {
 // ============================================================
 // Load persisted data
 var loaded = loadDB();
+fotosCargarIDB();
 migrarLocadorPorInmueble();
 migrarCobrosMesVencido();
 migrarLocadorSRL();
